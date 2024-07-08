@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.28"
+
 egui_plot = "0.28.1"
 roots = "0.0.8"
-egui = "0.22"  # <-- "0.25.0"
 #eframe = "0.22.0"  # <-- "0.25.0"
 plotters-backend = "0.3.6"
 plotters = "0.3.6"
-egui-plotter = "0.3.0"
+
+egui-plotter = { git = "https://github.com/ChatterMonkey/egui-plotter-update.git"}
+egui = "0.28.0"  # <-- "0.25.0"
+eframe = "0.28.0"

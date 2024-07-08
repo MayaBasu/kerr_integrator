@@ -1,9 +1,9 @@
-
+use std::f32::consts::PI;
 use egui_plot::{Line, Plot, PlotPoints};
 use std::time::Duration;
 
 use egui;
-use egui_plotter::EguiBackend;
+
 use plotters::prelude::*;
 use std::ops::Range;
 use roots::find_roots_quartic;
@@ -13,6 +13,8 @@ const E:f64 = 0.8889917687523382;
 const LZ:f64 =  1.92511617871112;
 const C: f64 = 1.2876760482236116;
 const dt :f64 = 0.01;
+const MOVE_SCALE: f32 = 0.01;
+const SCROLL_SCALE: f32 = 0.001;
 
 
 fn get_theta_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{ // coefficients for 0th, cos()^2 and cos()^4
@@ -30,7 +32,6 @@ fn get_radial_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{
   //  println!("{:?}",[a0,a1,a2,a3,a4]);
     [a0,a1,a2,a3,a4]
 }
-
 fn r_derivative(x:f64, coeffs:[f64;5]) ->f64{
     let mut sum = 0.0;
     for i in (0..coeffs.len()){
@@ -56,7 +57,7 @@ fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) 
     let mut last_switch_location:f64 = 0.0;
     let mut y = y_min;
 
-    (0..20000).map(|i| {
+    (0..1000).map(|i| {
         let x = i as f64 * dt;
         let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*dt;
         y += increment;
@@ -69,20 +70,40 @@ fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) 
     }).collect()
 }
 
-fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) { //->PlotPoints
+fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> Vec<(f64,f64,f64)> { //->PlotPoints
     let r_points = r_plot_points.points().to_vec();
     let t_points = t_plot_points.points().to_vec();
-    let traj: Vec<[f64; 2]> = (0..20000).map(|i| [r_points[i].y,t_points[i].y] ).collect();
-
-    let mut phi_vec: Vec<[f64; 2]> = Vec::new();
-
-    for point in traj{
-        let r = point[0];
-        let theta = point[1];
-       // phi_vec.append(r_points)
+    let mut running_phi = 0.0;
+    (0..r_points.len()).map(|i|{
+        let r = r_points[i].y;
+        let theta = t_points[i].y;
         let phi = phi_total(theta,r,lz,e);
+        (r,theta,phi)
+    }).map(|(r,theta,phi_der)| {
+        running_phi += phi_der*dt;
 
+       // (i,j,running_phi % 2.0*std::f64::consts::PI)
+        (r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
     }
+    ).collect()
+
+
+
+
+  //  let traj: Vec<[f64; 2]> = (0..20000).map(|i| [r_points[i].y,t_points[i].y] ).collect();
+
+  //  let mut phi_vec: Vec<[f64; 2]> = Vec::new();
+
+   // for point in traj{
+ //       let r = point[0];
+   //     let theta = point[1];
+       // phi_vec.append(r_points)
+  //      let phi = phi_total(theta,r,lz,e);
+  //  }
+
+   // (-100..100)
+     //   .map(|y| y as f64 / 40.0)
+       // .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())).collect()
 
    // println!("{:?}",y[0]);
   //  for point in y.points(){
@@ -94,7 +115,36 @@ fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f6
 
 #[derive(Default)]
 
-struct Graph {}
+struct Graph {
+    chart_pitch: f32,
+    chart_yaw: f32,
+    chart_scale: f32,
+    chart_pitch_vel: f32,
+    chart_yaw_vel: f32,
+
+}
+
+impl Graph {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // Disable feathering as it causes artifacts
+        let context = &cc.egui_ctx;
+
+        context.tessellation_options_mut(|tess_options| {
+            tess_options.feathering = false;
+        });
+
+        // Also enable light mode
+        context.set_visuals(egui::Visuals::light());
+
+        Self {
+            chart_pitch: 0.3,
+            chart_yaw: 0.9,
+            chart_scale: 0.9,
+            chart_pitch_vel: 0.0,
+            chart_yaw_vel: 0.0,
+        }
+    }
+}
 
 
 impl eframe::App for Graph {
@@ -102,18 +152,47 @@ impl eframe::App for Graph {
         ctx.set_pixels_per_point(1.5);
         egui::CentralPanel::default().show(ctx, |ui| {
 
-            let root = EguiBackend::new(ui).into_drawing_area();
+            let (pitch_delta, yaw_delta, scale_delta) = ui.input(|input| {
+                let pointer = &input.pointer;
+                let delta = pointer.delta();
+
+                let (pitch_delta, yaw_delta) = match pointer.primary_down() {
+                    true => (delta.y * MOVE_SCALE, -delta.x * MOVE_SCALE),
+                    false => (self.chart_pitch_vel, self.chart_yaw_vel),
+                };
+
+                let scale_delta = input.smooth_scroll_delta.y * SCROLL_SCALE;
+
+                (pitch_delta, yaw_delta, scale_delta)
+            });
+
+            self.chart_pitch_vel = pitch_delta;
+            self.chart_yaw_vel = yaw_delta;
+
+            self.chart_pitch += self.chart_pitch_vel;
+            self.chart_yaw += self.chart_yaw_vel;
+            self.chart_scale += scale_delta;
+
+            let root = egui_plotter::EguiBackend::new(ui).into_drawing_area();
 
             root.fill(&WHITE).unwrap();
 
-            let x_axis = (-3.0..3.0).step(0.1);
-            let z_axis = (-3.0..3.0).step(0.1);
+            let width = 10.0;
+
+            let x_axis = (-width..width).step(0.1);
+            let z_axis = (-width..width).step(0.1);
 
             let mut chart = ChartBuilder::on(&root)
                 .caption(format!("3D Plot Test"), (FontFamily::SansSerif, 20))
-                .build_cartesian_3d(x_axis, -3.0..3.0, z_axis)
+                .build_cartesian_3d(x_axis, -width..width, z_axis)
                 .unwrap();
 
+            chart.with_projection(|mut pb| {
+                pb.yaw = self.chart_yaw as f64;
+                pb.pitch = self.chart_pitch as f64;
+                pb.scale = self.chart_scale as f64;
+                pb.into_matrix()
+            });
 
             chart
                 .configure_axes()
@@ -121,18 +200,18 @@ impl eframe::App for Graph {
                 .max_light_lines(3)
                 .draw()
                 .unwrap();
+            let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
+            let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & calculate_poly_derivative_theta_abs_sqrt,LZ,E,C);
 
+            let data =find_phi(radial,angular,LZ,E);
 
             chart
                 .draw_series(LineSeries::new(
-                    (-100..100)
-                        .map(|y| y as f64 / 40.0)
-                        .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())),
+                    data,
                     &BLACK,
                 ))
                 .unwrap()
-                .label("Line")
-                .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], BLACK));
+                .label("Line");
 
 
             root.present().unwrap();
@@ -200,6 +279,9 @@ impl eframe::App for Graph {
                 };
             }
         );
+
+        std::thread::sleep(Duration::from_millis(10));
+        ctx.request_repaint();
     }
 }
 
@@ -208,6 +290,7 @@ fn main() -> eframe::Result<()> {
 
 
     let native_options = eframe::NativeOptions {
+
         viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 800.0)),
         ..eframe::NativeOptions::default()
     };
@@ -215,7 +298,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Visulizator",
         native_options,
-        Box::new(|_| Ok(Box::<Graph>::default())),
+        Box::new(|cc| Ok(Box::new(Graph::new(cc)))),
     )
 
 }
