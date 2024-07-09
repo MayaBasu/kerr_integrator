@@ -70,7 +70,7 @@ fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) 
     }).collect()
 }
 
-fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> (Vec<(f64,f64)>,Vec<(f64,f64,f64)>) { //->PlotPoints
+fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> (PlotPoints,PlotPoints,PlotPoints,Vec<(f64,f64,f64)>) { //->PlotPoints
     let r_points = r_plot_points.points().to_vec();
     let t_points = t_plot_points.points().to_vec();
     let mut running_phi = 0.0;
@@ -82,44 +82,27 @@ fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f6
         (l, r,theta,phi)
     }).map(|(l,r,theta,phi_der)| {
         running_phi += phi_der*dt;
-        (l,running_phi, r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
+        (l,r,theta,running_phi, r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
     }
     ).collect();
 
-    let flat = (0..r_points.len()).map(|i|{
-        (coords[i].0,coords[i].1)
+    let flat_r = (0..r_points.len()).map(|i|{
+        [coords[i].0,coords[i].1]
     }).collect();
+    let flat_t = (0..r_points.len()).map(|i|{
+        [coords[i].0,coords[i].2]
+    }).collect();
+    let flat_p = (0..r_points.len()).map(|i|{
+        [coords[i].0,coords[i].3 % 2.0*std::f64::consts::PI]
+    }).collect();
+
     let cartesian =
         (0..r_points.len()).map(|i|{
-            (coords[i].2,coords[i].3,coords[i].4)
+            (coords[i].4,coords[i].5,coords[i].6)
         }).collect();
-    (flat,cartesian)
 
-
-
-
-
-  //  let traj: Vec<[f64; 2]> = (0..20000).map(|i| [r_points[i].y,t_points[i].y] ).collect();
-
-  //  let mut phi_vec: Vec<[f64; 2]> = Vec::new();
-
-   // for point in traj{
- //       let r = point[0];
-   //     let theta = point[1];
-       // phi_vec.append(r_points)
-  //      let phi = phi_total(theta,r,lz,e);
-  //  }
-
-   // (-100..100)
-     //   .map(|y| y as f64 / 40.0)
-       // .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())).collect()
-
-   // println!("{:?}",y[0]);
-  //  for point in y.points(){
- //       println!("{:?}, {:?}",point.x, point.y);
-  //  }
-
-}
+    (flat_r,flat_t,flat_p,cartesian)
+    }
 
 
 #[derive(Default)]
@@ -216,7 +199,7 @@ impl eframe::App for Graph {
 
             chart
                 .draw_series(LineSeries::new(
-                    data.1,
+                    data.3,
                     &BLACK,
                 ))
                 .unwrap()
@@ -236,11 +219,16 @@ impl eframe::App for Graph {
             let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
             let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & theta_derivative,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
-            let radial_line = Line::new(radial);
-            let angular_line = Line::new(angular);
+            let radial_line = Line::new(data.0);
+            let theta_line = Line::new(data.1);
+              let aziuthal_line  = Line::new(data.2);
 
 
-            Plot::new("my_plot").view_aspect(2.0).show(ui, |plot_ui| );  //{plot_ui.line(radial_line); plot_ui.line(angular_line)}
+            Plot::new("my_plot").view_aspect(2.0).show(ui, |plot_ui|{
+                plot_ui.line(radial_line);
+                plot_ui.line(theta_line);
+                plot_ui.line(aziuthal_line)
+            } );
 
 
 
@@ -311,23 +299,6 @@ fn main() -> eframe::Result<()> {
 
 }
 
-struct Geodesic_Data {
-    lambda_vals: Vec<f64>,
-    r_vals: Vec<f64>,
-    theta_vals: Vec<f64>,
-    phi_vals:  Vec<f64>,
-}
-impl Geodesic_Data {
-    fn initi(&mut self){
-        let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-        let angular = integrate(1.0471975511965979, 2.094395102365872, & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
-
-        let data =find_phi(radial,angular,LZ,E);
-
-
-        self.phi_vals = Vec::from([1.0,2.0]);
-    }
-}
 
 fn delta(r:f64) -> f64 {
     r.powi(2) - 2.0 * M * r + A.powi(2)
