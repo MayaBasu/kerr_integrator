@@ -21,13 +21,10 @@ const NUM_ITERATIONS: i32 = 1000;
 //responsiveness of geodesic plot to mouse movement
 const MOVE_SCALE: f32 = 0.01;
 const SCROLL_SCALE: f32 = 0.001;
-
-
 enum Coordinates {  //the two types of coordinates which can be integrated by themselves (wrt Mino times)
     Radial,
     Theta,
 }
-
 
 fn get_theta_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{  // coefficients for 0th, cos()^2 and cos()^4
     let a0 = c;
@@ -58,9 +55,7 @@ fn coefficients_to_poly(x:f64, coefficients:[f64;5])-> f64{
     }
     sum
 }
-
-
-fn root_hunt_and_peck<F: Fn(f64)->f64>(y_start: f64, graph: F) -> (f64, f64) {
+fn root_hunt_and_peck<F: Fn(f64)->f64>(y_start: f64, graph: F) -> (f64, f64) { //find a root above and below a starting value given a graph with the desired roots
     let mut lowerbound = y_start;
     let mut upperbound = y_start;
 
@@ -103,9 +98,6 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
         Coordinates::Theta =>  theta_derivative,
     };
 
-    let specific_derivative = |x: f64| -> f64 {
-        derivative(x, coefficients)
-    };
 
     let roots = match &coordinate {
         Coordinates::Radial => {
@@ -115,7 +107,6 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
             };
             let roots = root_hunt_and_peck(y_start,& graph);
             roots
-
         }
         Coordinates::Theta => {
             println!("FOR THETA");
@@ -124,48 +115,30 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
             };
             let roots = root_hunt_and_peck(y_start,&graph);
             roots
-
         }
     };
 
-
-
-
-    //let mut y_max2 = Ok(roots::find_root_brent(y_start,10.0,& specific_poly,&mut 0.001));
-
-
-
-
-
-
-
-
-
-   //  println!("y_min and y_max {:?},{:?}",y_min2,y_max2);
-
-    let y_min = 0.0;
-    let y_max = 2.0;
 
     let mut going_up:bool = true;
     let mut last_switch_location:f64 = 0.0;
     let mut y = y_start;
 
 
-    let points:PlotPoints = (0..NUM_ITERATIONS).map(|i| { [0.0,0.0]}).collect();
-    points
+    (0..NUM_ITERATIONS).map(|i| {
 
-    //    let x = i as f64 * DT;
+        let x = i as f64 * DT;
 
-   //     let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*DT;
-   //     y += increment;
+        let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*DT;
+        y += increment;
 
-    //    if ((y-y_min).abs() < 0.001 || (y-y_max).abs() < 0.001) && (x - last_switch_location).abs() > 1.0{
+        if ((y-roots.0).abs() < 0.001 || (y-roots.1).abs() < 0.001) && (x - last_switch_location).abs() > 0.2{
 
-    //        going_up = !going_up;
-    //        last_switch_location = x;
-          //  println!("Switched at {}, going up is {}",last_switch_location,going_up)
-   //     }
-     //   [x, y]
+            going_up = !going_up;
+            last_switch_location = x;
+            println!("Switched at {}, going up is {}",last_switch_location,going_up)
+        }
+        [x, y]
+    }).collect()
 
 }
 
