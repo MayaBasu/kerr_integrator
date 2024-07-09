@@ -1,7 +1,8 @@
+use roots::Roots;
 use std::f32::consts::PI;
 use egui_plot::{Line, Plot, PlotPoints};
 use std::time::Duration;
-
+use roots::find_root_regula_falsi;
 use egui;
 
 use plotters::prelude::*;
@@ -35,7 +36,7 @@ fn get_radial_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{
 }
 fn r_derivative(x:f64, coeffs:[f64;5]) ->f64{
     let mut sum = 0.0;
-    for i in (0..coeffs.len()){
+    for i in 0..coeffs.len() {
         sum += coeffs[i]*x.powi(i as i32)
     }
     sum.abs().sqrt()
@@ -43,25 +44,96 @@ fn r_derivative(x:f64, coeffs:[f64;5]) ->f64{
 fn theta_derivative(x:f64, coeffs:[f64;5]) ->f64{
     let c = x.cos();
     let mut sum = 0.0;
-    for i in (0..coeffs.len()){
+    for i in 0..coeffs.len() {
         sum += coeffs[i]*c.powi(i as i32)
     }
     sum = sum.abs().sqrt()/x.sin();
     sum
-
 }
 
-fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) -> [f64;5], derivative:  &dyn Fn(f64, [f64;5])->f64, lz:f64, e:f64, c:f64) -> PlotPoints{ //function should
+fn std_theta_wrapper(x:f64)-> f64{
+    let coeffs = get_theta_poly_coefficients(LZ,E,C);
+    x.cos().powi(4)*coeffs[4]+x.cos().powi(2)*coeffs[2]+x.cos().powi(0)*coeffs[0]
+}
+
+fn integrate(y_start:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) -> [f64;5], derivative:  &dyn Fn(f64, [f64;5])->f64, lz:f64, e:f64, c:f64) -> PlotPoints{ //function should
     let coefficients = coefficient_calculator( lz, e, c);
+
+    let multiple_roots = find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]);
+
+    let mut root_list: Vec<f64> = Vec::new();
+    match multiple_roots {
+        Roots::Four(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::Three(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::Two(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::One(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::No(roots)=>{
+
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+
+                }
+            }
+        }
+    }
+    if root_list.len() < 2 {
+        panic!("There were les than two roots!?!")
+    }
+    let mut y_min  = 0.0;
+    let mut y_max  = 0.0;
+    for root in root_list {
+        if root < y_start {
+            y_min = root;
+        }
+        if root > y_start {
+            y_max = root;
+            break
+        }
+    }
+
+   // println!("y_min and y_max {},{}",y_min,y_max);
+
+
+
     let mut going_up:bool = true;
     let mut last_switch_location:f64 = 0.0;
     let mut y = y_min;
 
+
     (0..iterations).map(|i| {
+
         let x = i as f64 * dt;
+
         let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*dt;
         y += increment;
+
         if ((y-y_min).abs() < 0.001 || (y-y_max).abs() < 0.001) && (x - last_switch_location).abs() > 1.0{
+
             going_up = !going_up;
             last_switch_location = x;
           //  println!("Switched at {}, going up is {}",last_switch_location,going_up)
@@ -174,7 +246,7 @@ impl eframe::App for Graph {
             let z_axis = (-width..width).step(0.1);
 
             let mut chart = ChartBuilder::on(&root)
-                .caption(format!("Kerr Geodesic"), (FontFamily::SansSerif, 20))
+                .caption(format!("Kerr Geodesic in Cartesian"), (FontFamily::SansSerif, 20))
                 .build_cartesian_3d(x_axis, -width..width, z_axis)
                 .unwrap();
 
@@ -192,8 +264,8 @@ impl eframe::App for Graph {
                 .draw()
                 .unwrap();
 
-            let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-            let angular = integrate(1.0471975511965979, 2.094395102365872, & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
+            let radial = integrate(3.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
+            let angular = integrate(1.5,  & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
 
             let data =find_phi(radial,angular,LZ,E);
 
@@ -209,15 +281,13 @@ impl eframe::App for Graph {
             root.present().unwrap();
         });
 
-
-
-          egui::SidePanel::left("left pannel").show(ctx, |ui| {
+        egui::SidePanel::left("left pannel").show(ctx, |ui| {
 
             ui.heading("In Mino Time");
 
 
-            let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-            let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & theta_derivative,LZ,E,C);
+            let radial = integrate(3.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
+            let angular = integrate(1.5, & get_theta_poly_coefficients, & theta_derivative,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
             let radial_line = Line::new(data.0);
             let theta_line = Line::new(data.1);
@@ -231,18 +301,16 @@ impl eframe::App for Graph {
             } );
 
 
-
-            if ui.button("Quit").clicked() {
+            if ui.button("Unicorns").clicked() {
                 std::process::exit(0);
             };
         });
 
-        egui::SidePanel::right("side pannel").show(
-            ctx,
+        egui::SidePanel::right("side pannel").show(ctx,
             |ui| {
-                ui.heading("R ");
+                ui.heading("Distance between streams");
 
-                ui.label("This is a ui.label");
+                ui.label("Graph of closest distance of approach");
                 let coeffs = get_radial_poly_coefficients(LZ,E,C);
 
 
@@ -255,19 +323,45 @@ impl eframe::App for Graph {
                 }).collect();
 
                 let line = Line::new(R);
-                let R2: PlotPoints = (0..1000).map(|i| {
+                let coeffs = get_radial_poly_coefficients(LZ,E,C);
+
+                let R2: PlotPoints = (-1000..1000).map(|i| {
+                    let x = i as f64 * 0.01;
+                    if std_theta_wrapper(x) < 100.0 {
+                        [x, std_theta_wrapper(x)]
+                    }
+                    else {
+                        [x, 0.0]
+                    }
+
+
+
+                   // [x,x]
+
+                }).collect();
+                let coeffs = get_radial_poly_coefficients(LZ,E,C);
+                let R3: PlotPoints = (-1000..1000).map(|i| {
                     let x = i as f64 * 0.01;
 
-                    //  [x, Theta(x,LZ,E,C)]
-                    [x,x]
+                    if theta_derivative(x,coeffs) < 100.0{
+                        [x,theta_derivative(x,coeffs)]
+                    }
+                    else {
+                        [x, 0.0]
+                    }
+
+
+                    // [x,x]
 
                 }).collect();
 
                 let line2 = Line::new(R2);
+                let line3 = Line::new(R3);
 
 
 
-                Plot::new("my_plot").view_aspect(2.0).show(ui, |plot_ui| {plot_ui.line(line); });
+
+                Plot::new("my_plot").view_aspect(1.0).show(ui, |plot_ui| { plot_ui.line(line2);});
 
                 // This literally creates the button AND checks to see if it was clicked
                 if ui.button("Quit").clicked() {
@@ -282,7 +376,17 @@ impl eframe::App for Graph {
 }
 
 fn main() -> eframe::Result<()> {
-  //  println!("{}",radial(2.0,LZ,E,C));
+    let coeffs = get_theta_poly_coefficients(LZ,E,C);
+    println!("{:?}",coeffs);
+    let upper:f64 = 1.0471975511965979;
+    let lower = 1.0471975511965979;
+   // println!("{}",upper.cos().powi(4)*coeffs[4]+upper.cos().powi(2)*coeffs[2]+upper.cos().powi(0)*coeffs[0] );
+
+
+    println!("{}",std_theta_wrapper(1.0471975511965979)); //this returns 0.00000002145413625137383
+    let roots = roots::find_root_brent(0.9,1.1,&std_theta_wrapper,&mut 0.001);
+    println!("{:?}",roots); // this returns Err(NoBracketing)
+
 
 
     let native_options = eframe::NativeOptions {
@@ -290,9 +394,8 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 800.0)),
         ..eframe::NativeOptions::default()
     };
-
     eframe::run_native(
-        "Visulizator",
+        "Visualizer",
         native_options,
         Box::new(|cc| Ok(Box::new(Graph::new(cc)))),
     )
@@ -310,7 +413,7 @@ fn p(r:f64, lz:f64,e:f64) -> f64 {
     e*(r.powi(2) + A.powi(2))-A*lz
 }
 fn radial(r:f64, lz:f64, e:f64, c:f64) -> f64{
-    (p(r,lz,e).powi(2)-delta(r)*(r.powi(2) + (A*e-lz).powi(2)+c))
+    p(r,lz,e).powi(2)-delta(r)*(r.powi(2) + (A*e-lz).powi(2)+c)
 
     //   (p(r,lz,e).powi(2)-delta(r)*(r.powi(2) + (A*e-lz).powi(2)+c))
 }
