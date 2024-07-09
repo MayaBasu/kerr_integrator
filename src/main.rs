@@ -13,6 +13,7 @@ const E:f64 = 0.8889917687523382;
 const LZ:f64 =  1.92511617871112;
 const C: f64 = 1.2876760482236116;
 const dt :f64 = 0.01;
+const iterations: i32 = 1000;
 const MOVE_SCALE: f32 = 0.01;
 const SCROLL_SCALE: f32 = 0.001;
 
@@ -39,8 +40,7 @@ fn r_derivative(x:f64, coeffs:[f64;5]) ->f64{
     }
     sum.abs().sqrt()
 }
-
-fn calculate_poly_derivative_theta_abs_sqrt(x:f64, coeffs:[f64;5])->f64{
+fn theta_derivative(x:f64, coeffs:[f64;5]) ->f64{
     let c = x.cos();
     let mut sum = 0.0;
     for i in (0..coeffs.len()){
@@ -57,7 +57,7 @@ fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) 
     let mut last_switch_location:f64 = 0.0;
     let mut y = y_min;
 
-    (0..1000).map(|i| {
+    (0..iterations).map(|i| {
         let x = i as f64 * dt;
         let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*dt;
         y += increment;
@@ -70,22 +70,31 @@ fn integrate(y_min:f64, y_max:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) 
     }).collect()
 }
 
-fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> Vec<(f64,f64,f64)> { //->PlotPoints
+fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> (Vec<(f64,f64)>,Vec<(f64,f64,f64)>) { //->PlotPoints
     let r_points = r_plot_points.points().to_vec();
     let t_points = t_plot_points.points().to_vec();
     let mut running_phi = 0.0;
-    (0..r_points.len()).map(|i|{
+    let coords: Vec<_> = (0..r_points.len()).map(|i|{
         let r = r_points[i].y;
+        let l = r_points[i].x;
         let theta = t_points[i].y;
         let phi = phi_total(theta,r,lz,e);
-        (r,theta,phi)
-    }).map(|(r,theta,phi_der)| {
+        (l, r,theta,phi)
+    }).map(|(l,r,theta,phi_der)| {
         running_phi += phi_der*dt;
-
-       // (i,j,running_phi % 2.0*std::f64::consts::PI)
-        (r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
+        (l,running_phi, r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
     }
-    ).collect()
+    ).collect();
+
+    let flat = (0..r_points.len()).map(|i|{
+        (coords[i].0,coords[i].1)
+    }).collect();
+    let cartesian =
+        (0..r_points.len()).map(|i|{
+            (coords[i].2,coords[i].3,coords[i].4)
+        }).collect();
+    (flat,cartesian)
+
 
 
 
@@ -168,7 +177,6 @@ impl eframe::App for Graph {
 
             self.chart_pitch_vel = pitch_delta;
             self.chart_yaw_vel = yaw_delta;
-
             self.chart_pitch += self.chart_pitch_vel;
             self.chart_yaw += self.chart_yaw_vel;
             self.chart_scale += scale_delta;
@@ -183,7 +191,7 @@ impl eframe::App for Graph {
             let z_axis = (-width..width).step(0.1);
 
             let mut chart = ChartBuilder::on(&root)
-                .caption(format!("3D Plot Test"), (FontFamily::SansSerif, 20))
+                .caption(format!("Kerr Geodesic"), (FontFamily::SansSerif, 20))
                 .build_cartesian_3d(x_axis, -width..width, z_axis)
                 .unwrap();
 
@@ -200,14 +208,15 @@ impl eframe::App for Graph {
                 .max_light_lines(3)
                 .draw()
                 .unwrap();
+
             let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-            let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & calculate_poly_derivative_theta_abs_sqrt,LZ,E,C);
+            let angular = integrate(1.0471975511965979, 2.094395102365872, & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
 
             let data =find_phi(radial,angular,LZ,E);
 
             chart
                 .draw_series(LineSeries::new(
-                    data,
+                    data.1,
                     &BLACK,
                 ))
                 .unwrap()
@@ -219,27 +228,26 @@ impl eframe::App for Graph {
 
 
 
+          egui::SidePanel::left("left pannel").show(ctx, |ui| {
 
-        //  egui::CentralPanel::default().show(ctx, |ui| {
-
-    //        ui.heading("In Mino Time");
-
-
-     //       let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-     //       let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & calculate_poly_derivative_theta_abs_sqrt,LZ,E,C);
-     //       find_phi( radial, angular,LZ, E);
-           // let radial_line = Line::new(radial);
-          //  let angular_line = Line::new(angular);
+            ui.heading("In Mino Time");
 
 
-           // Plot::new("my_plot").view_aspect(2.0).show(ui, |plot_ui| );  //{plot_ui.line(radial_line); plot_ui.line(angular_line)}
+            let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
+            let angular = integrate(1.0471975511965979,2.094395102365872, & get_theta_poly_coefficients, & theta_derivative,LZ,E,C);
+              let data =find_phi(radial,angular,LZ,E);
+            let radial_line = Line::new(radial);
+            let angular_line = Line::new(angular);
+
+
+            Plot::new("my_plot").view_aspect(2.0).show(ui, |plot_ui| );  //{plot_ui.line(radial_line); plot_ui.line(angular_line)}
 
 
 
-        //    if ui.button("Quit").clicked() {
-        //        std::process::exit(0);
-       //     };
-      //  });
+            if ui.button("Quit").clicked() {
+                std::process::exit(0);
+            };
+        });
 
         egui::SidePanel::right("side pannel").show(
             ctx,
@@ -303,7 +311,23 @@ fn main() -> eframe::Result<()> {
 
 }
 
+struct Geodesic_Data {
+    lambda_vals: Vec<f64>,
+    r_vals: Vec<f64>,
+    theta_vals: Vec<f64>,
+    phi_vals:  Vec<f64>,
+}
+impl Geodesic_Data {
+    fn initi(&mut self){
+        let radial = integrate(2.0, 6.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
+        let angular = integrate(1.0471975511965979, 2.094395102365872, & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
 
+        let data =find_phi(radial,angular,LZ,E);
+
+
+        self.phi_vals = Vec::from([1.0,2.0]);
+    }
+}
 
 fn delta(r:f64) -> f64 {
     r.powi(2) - 2.0 * M * r + A.powi(2)
