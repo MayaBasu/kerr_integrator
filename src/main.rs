@@ -1,25 +1,35 @@
-use roots::Roots;
-use std::f32::consts::PI;
+use roots::{Roots, find_roots_quartic, SearchError};
 use egui_plot::{Line, Plot, PlotPoints};
-use std::time::Duration;
-use roots::find_root_regula_falsi;
 use egui;
-
 use plotters::prelude::*;
-use std::ops::Range;
-use roots::find_roots_quartic;
+
+
+//no hair
 const M: f64 = 1.0;
 const A: f64 = 0.999;
+
+//specify an orbit
 const E:f64 = 0.8889917687523382;
 const LZ:f64 =  1.92511617871112;
 const C: f64 = 1.2876760482236116;
-const dt :f64 = 0.01;
-const iterations: i32 = 1000;
+
+
+//determine how long to integrate, and at what granulation
+const DT :f64 = 0.01;
+const NUM_ITERATIONS: i32 = 1000;
+
+//responsiveness of geodesic plot to mouse movement
 const MOVE_SCALE: f32 = 0.01;
 const SCROLL_SCALE: f32 = 0.001;
 
 
-fn get_theta_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{ // coefficients for 0th, cos()^2 and cos()^4
+enum Coordinates {  //the two types of coordinates which can be integrated by themselves (wrt Mino times)
+    Radial,
+    Theta,
+}
+
+
+fn get_theta_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{  // coefficients for 0th, cos()^2 and cos()^4
     let a0 = c;
     let a2 = -(c+A.powi(2)*(1.0-e.powi(2))+lz.powi(2));
     let a4 = A.powi(2)*(1.0-e.powi(2));
@@ -34,112 +44,129 @@ fn get_radial_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{
   //  println!("{:?}",[a0,a1,a2,a3,a4]);
     [a0,a1,a2,a3,a4]
 }
-fn r_derivative(x:f64, coeffs:[f64;5]) ->f64{
-    let mut sum = 0.0;
-    for i in 0..coeffs.len() {
-        sum += coeffs[i]*x.powi(i as i32)
-    }
-    sum.abs().sqrt()
+fn r_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dr/dlambda
+    coefficients_to_poly(x,coefficients).abs().sqrt()
 }
-fn theta_derivative(x:f64, coeffs:[f64;5]) ->f64{
+fn theta_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dtheta/dlambda
     let c = x.cos();
+    coefficients_to_poly(c,coefficients).abs().sqrt()/x.sin()
+}
+fn coefficients_to_poly(x:f64, coefficients:[f64;5])-> f64{
     let mut sum = 0.0;
-    for i in 0..coeffs.len() {
-        sum += coeffs[i]*c.powi(i as i32)
+    for i in 0..coefficients.len() {
+        sum += coefficients[i]*x.powi(i as i32)
     }
-    sum = sum.abs().sqrt()/x.sin();
     sum
 }
 
-fn std_theta_wrapper(x:f64)-> f64{
-    let coeffs = get_theta_poly_coefficients(LZ,E,C);
-    x.cos().powi(4)*coeffs[4]+x.cos().powi(2)*coeffs[2]+x.cos().powi(0)*coeffs[0]
+
+fn root_hunt_and_peck<F: Fn(f64)->f64>(y_start: f64, graph: F) -> (f64, f64) {
+    let mut lowerbound = y_start;
+    let mut upperbound = y_start;
+
+    let lower_root = loop {
+        lowerbound += -0.01;
+        match roots::find_root_brent(lowerbound,y_start,& graph,&mut 0.001){
+            Ok(root) => {println!("root1: {} found at {}",root,lowerbound); break root}
+            Err(message) => {} //println!("{} not found at {}",message,lowerbound)
+        };
+        if lowerbound < 0.0{
+            panic!("No lower root found")
+        }
+    };
+
+    let upper_root = loop {
+        upperbound += 0.01;
+        match roots::find_root_brent(y_start,upperbound,& graph,&mut 0.001){
+            Ok(root) => {println!("root1: {} found at {}",root,lowerbound); break root}
+            Err(message) => {}
+        };
+        if upperbound > 20.0{
+            panic!("No upper root found below search criteria")
+        }
+    };
+
+    (lower_root,upper_root)
+
 }
 
-fn integrate(y_start:f64, coefficient_calculator: &dyn Fn(f64,f64,f64) -> [f64;5], derivative:  &dyn Fn(f64, [f64;5])->f64, lz:f64, e:f64, c:f64) -> PlotPoints{ //function should
-    let coefficients = coefficient_calculator( lz, e, c);
 
-    let multiple_roots = find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]);
+fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints{ //function should
 
-    let mut root_list: Vec<f64> = Vec::new();
-    match multiple_roots {
-        Roots::Four(roots) =>{
-            for root in roots{
-                if root >0.0{
-                    root_list.push(root);
-                }
-            }
-        }
-        Roots::Three(roots) =>{
-            for root in roots{
-                if root >0.0{
-                    root_list.push(root);
-                }
-            }
-        }
-        Roots::Two(roots) =>{
-            for root in roots{
-                if root >0.0{
-                    root_list.push(root);
-                }
-            }
-        }
-        Roots::One(roots) =>{
-            for root in roots{
-                if root >0.0{
-                    root_list.push(root);
-                }
-            }
-        }
-        Roots::No(roots)=>{
+    let coefficients:  [f64;5] = match &coordinate  {
+        Coordinates::Radial => get_radial_poly_coefficients(lz,e,c),
+        Coordinates::Theta => get_theta_poly_coefficients(lz,e,c),
+    };
 
-            for root in roots{
-                if root >0.0{
-                    root_list.push(root);
+    let derivative= match &coordinate  {  // pick out derivative function
+        Coordinates::Radial => r_derivative,
+        Coordinates::Theta =>  theta_derivative,
+    };
 
-                }
-            }
-        }
-    }
-    if root_list.len() < 2 {
-        panic!("There were les than two roots!?!")
-    }
-    let mut y_min  = 0.0;
-    let mut y_max  = 0.0;
-    for root in root_list {
-        if root < y_start {
-            y_min = root;
-        }
-        if root > y_start {
-            y_max = root;
-            break
-        }
-    }
+    let specific_derivative = |x: f64| -> f64 {
+        derivative(x, coefficients)
+    };
 
-   // println!("y_min and y_max {},{}",y_min,y_max);
+    let roots = match &coordinate {
+        Coordinates::Radial => {
+            println!("FOR Radial");
+            let graph = |x: f64| -> f64 {
+                coefficients_to_poly(x, coefficients)
+            };
+            let roots = root_hunt_and_peck(y_start,& graph);
+            roots
+
+        }
+        Coordinates::Theta => {
+            println!("FOR THETA");
+            let graph = |x: f64| -> f64 {
+                coefficients_to_poly(x.cos(), coefficients)
+            };
+            let roots = root_hunt_and_peck(y_start,&graph);
+            roots
+
+        }
+    };
 
 
+
+
+    //let mut y_max2 = Ok(roots::find_root_brent(y_start,10.0,& specific_poly,&mut 0.001));
+
+
+
+
+
+
+
+
+
+   //  println!("y_min and y_max {:?},{:?}",y_min2,y_max2);
+
+    let y_min = 0.0;
+    let y_max = 2.0;
 
     let mut going_up:bool = true;
     let mut last_switch_location:f64 = 0.0;
-    let mut y = y_min;
+    let mut y = y_start;
 
 
-    (0..iterations).map(|i| {
+    let points:PlotPoints = (0..NUM_ITERATIONS).map(|i| { [0.0,0.0]}).collect();
+    points
 
-        let x = i as f64 * dt;
+    //    let x = i as f64 * DT;
 
-        let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*dt;
-        y += increment;
+   //     let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*DT;
+   //     y += increment;
 
-        if ((y-y_min).abs() < 0.001 || (y-y_max).abs() < 0.001) && (x - last_switch_location).abs() > 1.0{
+    //    if ((y-y_min).abs() < 0.001 || (y-y_max).abs() < 0.001) && (x - last_switch_location).abs() > 1.0{
 
-            going_up = !going_up;
-            last_switch_location = x;
+    //        going_up = !going_up;
+    //        last_switch_location = x;
           //  println!("Switched at {}, going up is {}",last_switch_location,going_up)
-        }
-        [x, y]
-    }).collect()
+   //     }
+     //   [x, y]
+
 }
 
 fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f64) -> (PlotPoints,PlotPoints,PlotPoints,Vec<(f64,f64,f64)>) { //->PlotPoints
@@ -153,7 +180,7 @@ fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f6
         let phi = phi_total(theta,r,lz,e);
         (l, r,theta,phi)
     }).map(|(l,r,theta,phi_der)| {
-        running_phi += phi_der*dt;
+        running_phi += phi_der*DT;
         (l,r,theta,running_phi, r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
     }
     ).collect();
@@ -190,14 +217,12 @@ struct Graph {
 
 impl Graph {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // Disable feathering as it causes artifacts
         let context = &cc.egui_ctx;
 
         context.tessellation_options_mut(|tess_options| {
             tess_options.feathering = false;
         });
 
-        // Also enable light mode
         context.set_visuals(egui::Visuals::light());
 
         Self {
@@ -264,8 +289,8 @@ impl eframe::App for Graph {
                 .draw()
                 .unwrap();
 
-            let radial = integrate(3.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-            let angular = integrate(1.5,  & get_theta_poly_coefficients, &theta_derivative, LZ, E, C);
+            let radial = integrate(3.0, Coordinates::Radial, LZ, E, C);
+            let angular = integrate(1.5,  Coordinates::Theta, LZ, E, C);
 
             let data =find_phi(radial,angular,LZ,E);
 
@@ -286,8 +311,8 @@ impl eframe::App for Graph {
             ui.heading("In Mino Time");
 
 
-            let radial = integrate(3.0, & get_radial_poly_coefficients, &r_derivative, LZ, E, C);
-            let angular = integrate(1.5, & get_theta_poly_coefficients, & theta_derivative,LZ,E,C);
+            let radial = integrate(3.0, Coordinates::Radial, LZ, E, C);
+            let angular = integrate(1.5, Coordinates::Theta,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
             let radial_line = Line::new(data.0);
             let theta_line = Line::new(data.1);
@@ -325,10 +350,10 @@ impl eframe::App for Graph {
                 let line = Line::new(R);
                 let coeffs = get_radial_poly_coefficients(LZ,E,C);
 
-                let R2: PlotPoints = (-1000..1000).map(|i| {
+                let R2: PlotPoints = (0..500).map(|i| {
                     let x = i as f64 * 0.01;
-                    if std_theta_wrapper(x) < 100.0 {
-                        [x, std_theta_wrapper(x)]
+                    if coefficients_to_poly(x,coeffs) < 100.0 {
+                        [x, coefficients_to_poly(x,coeffs)]
                     }
                     else {
                         [x, 0.0]
@@ -370,7 +395,7 @@ impl eframe::App for Graph {
             }
         );
 
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(std::time::Duration::from_millis(10));
         ctx.request_repaint();
     }
 }
@@ -383,9 +408,6 @@ fn main() -> eframe::Result<()> {
    // println!("{}",upper.cos().powi(4)*coeffs[4]+upper.cos().powi(2)*coeffs[2]+upper.cos().powi(0)*coeffs[0] );
 
 
-    println!("{}",std_theta_wrapper(1.0471975511965979)); //this returns 0.00000002145413625137383
-    let roots = roots::find_root_brent(0.9,1.1,&std_theta_wrapper,&mut 0.001);
-    println!("{:?}",roots); // this returns Err(NoBracketing)
 
 
 
