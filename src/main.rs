@@ -2,6 +2,7 @@ use roots::{Roots, find_roots_quartic, SearchError};
 use egui_plot::{Line, Plot, PlotPoints};
 use egui;
 use plotters::prelude::*;
+use std::io;
 
 
 //no hair
@@ -20,6 +21,85 @@ enum Coordinates {  //the two types of coordinates which can be integrated by th
     Radial,
     Theta,
 }
+
+
+fn analyze_r_derivative(coefficients:[f64;5]) -> (f64,f64,f64) { //r start, rmin, rmax
+    let multiple_roots = find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]);
+    let mut root_list: Vec<f64> = Vec::new();
+
+    match multiple_roots {
+        Roots::Four(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::Three(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::Two(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::One(roots) =>{
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+                }
+            }
+        }
+        Roots::No(roots)=>{
+
+            for root in roots{
+                if root >0.0{
+                    root_list.push(root);
+
+                }
+            }
+        }
+    }
+    println!("The positive roots of the radial derivative function are at {:?}",root_list);
+    if root_list.len() < 2{
+        panic!("There were less than 2 roots :( ")
+    }
+
+    for i in (0..root_list.len()-1){
+        println!("sample intermediate value: {}",coefficients_to_poly((root_list[i+1]-root_list[i])/2.0+root_list[i],coefficients));
+    }
+
+    let mut r_start =String::new();
+    println!("Select an initial starting value:");
+
+    io::stdin()
+        .read_line(&mut r_start)
+        .expect("Failed to read line");
+    let r_start = r_start.trim().parse().expect("Please type a number!");
+    let mut r_min = 0.0;
+    let mut r_max  = 0.0;
+    for root in root_list {
+        if root < r_start {
+            r_min = root;
+        }
+        if root > r_start {
+            r_max = root;
+            break
+        }
+    };
+    println!("Then the bounds are {} to {}",r_min,r_max);
+    (r_start,r_min,r_max)
+
+
+
+}
+
 fn get_theta_poly_coefficients( lz:f64, e:f64, c:f64)->[f64;5]{ // coefficients for 0th, cos()^2 and cos()^4
     let a0 = c;
     let a2 = -(c+A.powi(2)*(1.0-e.powi(2))+lz.powi(2));
@@ -89,7 +169,7 @@ fn root_hunt_and_peck<F: Fn(f64)->f64>(y_start: f64, graph: F) -> (f64, f64) { /
 }
 
 
-fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints{ //function should
+fn integrate(y_start:f64, y_min:f64,y_max:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints{ //function should
 
     let coefficients:  [f64;5] = match &coordinate  {
         Coordinates::Radial => get_radial_poly_coefficients(lz,e,c),
@@ -101,10 +181,10 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
         Coordinates::Theta =>  theta_derivative,
     };
 
-    let (y_min,y_max)= match &coordinate {
-        Coordinates::Radial => {( 1.6666666666666665,15.000000000000004)}
-        Coordinates::Theta => {(1.0471975511965979,2.0943951023841776)}
-    };
+ //   let (y_min,y_max)= match &coordinate {
+//        Coordinates::Radial => {( 1.6666666666666665,15.000000000000004)}
+//        Coordinates::Theta => {(1.0471975511965979,2.0943951023841776)}
+ //   };
 
 
     let roots = match &coordinate {
@@ -203,12 +283,15 @@ struct Graph {
     chart_scale: f32,
     chart_pitch_vel: f32,
     chart_yaw_vel: f32,
+    r_initial: f64,
+    r_min: f64,
+    r_max: f64,
     data: (PlotPoints,PlotPoints,PlotPoints,Vec<(f64,f64,f64)>),
 
 }
 
 impl Graph {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, vals:(f64,f64,f64)) -> Self {
         let context = &cc.egui_ctx;
 
         context.tessellation_options_mut(|tess_options| {
@@ -216,11 +299,12 @@ impl Graph {
         });
 
         context.set_visuals(egui::Visuals::light());
-        let radial = integrate(1.6666666666666665, Coordinates::Radial, LZ, E, C);
-        let angular = integrate(1.0471975511965979, Coordinates::Theta,LZ,E,C);
+        let radial = integrate(vals.0,vals.1,vals.2, Coordinates::Radial, LZ, E, C);
+        let angular = integrate(1.0471975511965979,1.0471975511965979,2.0943951023841776, Coordinates::Theta,LZ,E,C);
         let data =find_phi(radial,angular,LZ,E);
 
-        println!("{:?}",data.0.points());
+      //  println!("{:?}",data.0.points());
+        println!("r initial {}, r min {}, r max {}",vals.0,vals.1,vals.2);
 
         Self {
             chart_pitch: 0.3,
@@ -228,8 +312,12 @@ impl Graph {
             chart_scale: 0.9,
             chart_pitch_vel: 0.0,
             chart_yaw_vel: 0.0,
+            r_initial:vals.0,
+            r_min:vals.1,
+            r_max:vals.2,
             data,
         }
+
     }
 }
 
@@ -307,8 +395,8 @@ impl eframe::App for Graph {
             ui.heading("In Mino Time");
 
 
-            let radial = integrate(1.6666666666666665, Coordinates::Radial, LZ, E, C);
-            let angular = integrate(1.047197551196597, Coordinates::Theta,LZ,E,C);
+            let radial = integrate(self.r_initial, self.r_min,self.r_max,Coordinates::Radial, LZ, E, C);
+            let angular = integrate(1.047197551196597, 1.047197551196597,2.0943951023841776,Coordinates::Theta,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
 
 
@@ -360,9 +448,6 @@ impl eframe::App for Graph {
 fn main() -> eframe::Result<()> {
 
 
-
-
-
     let native_options = eframe::NativeOptions {
 
         viewport: egui::ViewportBuilder::default().with_inner_size((800.0, 800.0)),
@@ -371,7 +456,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Visualizer",
         native_options,
-        Box::new(|cc| Ok(Box::new(Graph::new(cc)))),
+        Box::new(|cc| Ok(Box::new(Graph::new(cc,  analyze_r_derivative(get_radial_poly_coefficients(LZ,E,C)))))),
     )
 
 }
