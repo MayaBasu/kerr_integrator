@@ -164,7 +164,6 @@ fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f6
     }).map(|(l,r,theta,phi_der)| {
         running_phi += phi_der*DT;
         (l,r,theta,running_phi, r*theta.sin()*running_phi.cos(),r*theta.sin()*running_phi.sin(),r*theta.cos())
-        //(l,r,theta,running_phi, r*theta.sin(),r*theta.sin(),r*theta.cos())
     }
     ).collect();
 
@@ -180,15 +179,11 @@ fn find_phi(r_plot_points: PlotPoints, t_plot_points: PlotPoints,   lz:f64, e:f6
 
     let cartesian =
         (0..r_points.len()).map(|i|{
-            let mut denom:f64 = 10.0;
-            denom = 1.0;
-
-            (coords[i].4/denom, coords[i].5.log(10.0)/denom, coords[i].6.log(10.0)/denom)
+            (coords[i].4,coords[i].5,coords[i].6)
         }).collect();
 
     (flat_r,flat_t,flat_p,cartesian)
-    }
-
+}
 
 #[derive(Default)]
 
