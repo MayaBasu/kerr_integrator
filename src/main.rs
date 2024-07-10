@@ -7,9 +7,9 @@ use plotters::prelude::*;
 //no hair
 const M: f64 = 1.0;
 const A: f64 = 0.999;
-const E:f64 = 0.8889917687523382;
-const LZ:f64 =  1.92511617871112;
-const C: f64 = 1.2876760482236116;
+const E:f64 = 0.9434547799743745;
+const LZ:f64 =  2.026098396910175;
+const C: f64 = 1.3957765884574;
 const DT :f64 = 0.01;
 const NUM_ITERATIONS: i32 = 1000;
 const MOVE_SCALE: f32 = 0.01;
@@ -102,8 +102,8 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
     };
 
     let (y_min,y_max)= match &coordinate {
-        Coordinates::Radial => {(2.0,6.0)}
-        Coordinates::Theta => {(1.0471975511965979,2.094395102365872)}
+        Coordinates::Radial => {( 1.6666666666666665,15.000000000000004)}
+        Coordinates::Theta => {(1.0471975511965979,2.0943951023841776)}
     };
 
 
@@ -129,23 +129,33 @@ fn integrate(y_start:f64, coordinate:Coordinates,lz:f64,e:f64,c:f64)->PlotPoints
 
     let mut going_up:bool = true;
     let mut last_switch_location:f64 = 0.0;
+    let initial_value = match &coordinate {
+        Coordinates::Radial => {2.0}
+        Coordinates::Theta => {1.0471975511965979}
+    };
+   // println!("alsjdflkejlfjasekfjsd {}",y_start);
     let mut y = y_start;
+
    // println!("{}   {}",y_min,y_max);
 
 
     (0..NUM_ITERATIONS).map(|i| {
+        if i % 100 == 0 {
+          //  println!("{}, {}",i,y);
+        }
 
         let x = i as f64 * DT;
 
         let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*DT;
         y += increment;
 
-        if ((y-y_min).abs() < 0.001 || (y-y_max).abs() < 0.001) && (x - last_switch_location).abs() > 1.0{
+        if ((y-y_min).abs() < 0.01 || (y-y_max).abs() < 0.01) && (x - last_switch_location).abs() > 1.0{
 
             going_up = !going_up;
             last_switch_location = x;
         //    println!("Switched at {}, going up is {}",last_switch_location,going_up)
         }
+
         [x, y]
     }).collect()
 
@@ -206,9 +216,11 @@ impl Graph {
         });
 
         context.set_visuals(egui::Visuals::light());
-        let radial = integrate(2.142857142857143, Coordinates::Radial, LZ, E, C);
+        let radial = integrate(1.6666666666666665, Coordinates::Radial, LZ, E, C);
         let angular = integrate(1.0471975511965979, Coordinates::Theta,LZ,E,C);
         let data =find_phi(radial,angular,LZ,E);
+
+        println!("{:?}",data.0.points());
 
         Self {
             chart_pitch: 0.3,
@@ -252,7 +264,7 @@ impl eframe::App for Graph {
 
             root.fill(&WHITE).unwrap();
 
-            let width = 10.0;
+            let width = 20.0;
 
             let x_axis = (-width..width).step(0.1);
             let z_axis = (-width..width).step(0.1);
@@ -295,8 +307,8 @@ impl eframe::App for Graph {
             ui.heading("In Mino Time");
 
 
-            let radial = integrate(3.0, Coordinates::Radial, LZ, E, C);
-            let angular = integrate(1.5, Coordinates::Theta,LZ,E,C);
+            let radial = integrate(1.6666666666666665, Coordinates::Radial, LZ, E, C);
+            let angular = integrate(1.047197551196597, Coordinates::Theta,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
 
 
@@ -346,11 +358,7 @@ impl eframe::App for Graph {
 }
 
 fn main() -> eframe::Result<()> {
-    let coeffs = get_theta_poly_coefficients(LZ,E,C);
-    println!("{}",theta_derivative(2.9,coeffs));
-    let pltpnts = integrate(1.0471975511965979,Coordinates::Theta,LZ,E,C);
 
-    println!("{:?}",pltpnts.points());
 
 
 
