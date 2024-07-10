@@ -23,8 +23,8 @@ enum Coordinates {  //the two types of coordinates which can be integrated by th
 }
 
 
-fn analyze_r_derivative(coefficients:[f64;5]) -> (f64,f64,f64) { //r start, rmin, rmax
-    let multiple_roots = find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]);
+fn analyze_r_derivative(r_coefficients:[f64;5],theta_coefficients:[f64;5]) -> ((f64,f64,f64),(f64,f64,f64)) { //r start, rmin, rmax
+    let multiple_roots = find_roots_quartic(r_coefficients[4], r_coefficients[3], r_coefficients[2], r_coefficients[1], r_coefficients[0]);
     let mut root_list: Vec<f64> = Vec::new();
 
     match multiple_roots {
@@ -72,11 +72,11 @@ fn analyze_r_derivative(coefficients:[f64;5]) -> (f64,f64,f64) { //r start, rmin
     }
 
     for i in (0..root_list.len()-1){
-        println!("sample intermediate value: {}",coefficients_to_poly((root_list[i+1]-root_list[i])/2.0+root_list[i],coefficients));
+        println!("sample intermediate value: {}",coefficients_to_poly((root_list[i+1]-root_list[i])/2.0+root_list[i],r_coefficients));
     }
 
     let mut r_start =String::new();
-    println!("Select an initial starting value:");
+    println!("Select an initial starting value for r:");
 
     io::stdin()
         .read_line(&mut r_start)
@@ -93,9 +93,22 @@ fn analyze_r_derivative(coefficients:[f64;5]) -> (f64,f64,f64) { //r start, rmin
             break
         }
     };
-    println!("Then the bounds are {} to {}",r_min,r_max);
-    (r_start,r_min,r_max)
 
+    let mut theta_start =String::new();
+    println!("Select an initial starting value for theta:");
+
+    io::stdin()
+        .read_line(&mut theta_start)
+        .expect("Failed to read line");
+    let theta_start = theta_start.trim().parse().expect("Please type a number!");
+
+    let graph = |x: f64| -> f64 {
+        coefficients_to_poly(x.cos(), theta_coefficients)
+    };
+    let (theta_min,theta_max) = root_hunt_and_peck(theta_start,graph);
+
+    println!("Then the bounds are {} to {} for theta",theta_min,theta_max);
+    ((r_start,r_min,r_max),(theta_start,theta_min,theta_max))
 
 
 }
@@ -154,7 +167,7 @@ fn root_hunt_and_peck<F: Fn(f64)->f64>(y_start: f64, graph: F) -> (f64, f64) { /
             upperbound += 0.01;
         }
 
-        match roots::find_root_brent(y_start,upperbound,& graph,&mut 0.001){
+        match roots::find_root_brent(y_start+0.001,upperbound,& graph,&mut 0.001){
             Ok(root) => { break root}
             Err(message) => {}
         };
@@ -286,12 +299,15 @@ struct Graph {
     r_initial: f64,
     r_min: f64,
     r_max: f64,
+    theta_initial: f64,
+    theta_min: f64,
+    theta_max: f64,
     data: (PlotPoints,PlotPoints,PlotPoints,Vec<(f64,f64,f64)>),
 
 }
 
 impl Graph {
-    fn new(cc: &eframe::CreationContext<'_>, vals:(f64,f64,f64)) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, vals:((f64,f64,f64),(f64,f64,f64))) -> Self {
         let context = &cc.egui_ctx;
 
         context.tessellation_options_mut(|tess_options| {
@@ -299,12 +315,13 @@ impl Graph {
         });
 
         context.set_visuals(egui::Visuals::light());
-        let radial = integrate(vals.0,vals.1,vals.2, Coordinates::Radial, LZ, E, C);
-        let angular = integrate(1.0471975511965979,1.0471975511965979,2.0943951023841776, Coordinates::Theta,LZ,E,C);
+        let radial = integrate(vals.0.0,vals.0.1,vals.0.2, Coordinates::Radial, LZ, E, C);
+        let angular = integrate(vals.1.0,vals.1.1,vals.1.2, Coordinates::Theta,LZ,E,C);
         let data =find_phi(radial,angular,LZ,E);
 
       //  println!("{:?}",data.0.points());
-        println!("r initial {}, r min {}, r max {}",vals.0,vals.1,vals.2);
+        println!("r initial {}, r min {}, r max {}",vals.0.0,vals.0.1,vals.0.2);
+        println!("theta initial {}, theta min {}, theta max {}",vals.1.0,vals.1.1,vals.1.2);
 
         Self {
             chart_pitch: 0.3,
@@ -312,9 +329,12 @@ impl Graph {
             chart_scale: 0.9,
             chart_pitch_vel: 0.0,
             chart_yaw_vel: 0.0,
-            r_initial:vals.0,
-            r_min:vals.1,
-            r_max:vals.2,
+            r_initial:vals.0.0,
+            r_min:vals.0.1,
+            r_max:vals.0.2,
+            theta_initial:vals.1.0,
+            theta_min:vals.1.1,
+            theta_max:vals.1.2,
             data,
         }
 
@@ -396,7 +416,7 @@ impl eframe::App for Graph {
 
 
             let radial = integrate(self.r_initial, self.r_min,self.r_max,Coordinates::Radial, LZ, E, C);
-            let angular = integrate(1.047197551196597, 1.047197551196597,2.0943951023841776,Coordinates::Theta,LZ,E,C);
+            let angular = integrate(self.theta_initial, self.theta_min,self.theta_max,Coordinates::Theta,LZ,E,C);
               let data =find_phi(radial,angular,LZ,E);
 
 
@@ -456,7 +476,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Visualizer",
         native_options,
-        Box::new(|cc| Ok(Box::new(Graph::new(cc,  analyze_r_derivative(get_radial_poly_coefficients(LZ,E,C)))))),
+        Box::new(|cc| Ok(Box::new(Graph::new(cc,  analyze_r_derivative(get_radial_poly_coefficients(LZ,E,C),get_theta_poly_coefficients(LZ,E,C)))))),
     )
 
 }
