@@ -64,7 +64,7 @@ pub fn integrate(y_start:f64, y_min:f64,y_max:f64, coordinate:Coordinates,lz:f64
     };
 
     let ( length_tolerance,time_tolerance)  = match &coordinate{
-        Coordinates::Radial => {(1.0,1.0)}
+        Coordinates::Radial => {(0.02,1.0)}
         Coordinates::Theta => {(0.001,0.1)}
     };
 
@@ -75,13 +75,16 @@ pub fn integrate(y_start:f64, y_min:f64,y_max:f64, coordinate:Coordinates,lz:f64
 
 
 
-    let mut going_up:bool = true;
+    let mut going_up:bool = false;
     let mut last_switch_location:f64 = 0.0;
 
     // println!("alsjdflkejlfjasekfjsd {}",y_start);
     let mut y = y_start;
 
     // println!("{}   {}",y_min,y_max);
+
+
+
 
 
     (0..NUM_ITERATIONS).map(|i| {
@@ -94,9 +97,10 @@ pub fn integrate(y_start:f64, y_min:f64,y_max:f64, coordinate:Coordinates,lz:f64
         let increment = {if going_up {derivative(y,coefficients)} else {-derivative(y,coefficients)}}*DT;
         y += increment;
 
-        if ((y-y_min).abs() < length_tolerance || (y-y_max).abs() < length_tolerance) && (x - last_switch_location).abs() > time_tolerance{
+        //if ((y-y_min).abs() < length_tolerance || (y-y_max).abs() < length_tolerance) && (x - last_switch_location).abs() > time_tolerance{
+        if ((y-y_min).abs() < increment+0.0001 || (y-y_max).abs() < increment + 0.0001) && (x - last_switch_location).abs() > time_tolerance{
 
-            going_up = !going_up;
+                going_up = !going_up;
             last_switch_location = x;
             //    println!("Switched at {}, going up is {}",last_switch_location,going_up)
         }

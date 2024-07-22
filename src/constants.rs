@@ -1,21 +1,23 @@
 
 //no hair
 pub const M: f64 = 1.0;
-pub const A: f64 = 0.99;
+pub const A: f64 = 0.0;
 
 //manually adjusted constants
-pub const E:f64 =0.95;
+pub const E:f64 =0.999;
 pub const COS_I:f64 = 0.5;
-pub const L:f64 = 40.0;
+pub const SIN_I:f64 = 1.0-COS_I*COS_I;
+
+pub const L:f64 = 4.0;
 
 
 // code uses LZ,C,E
-pub const LZ:f64 = COS_I*L;
+pub const LZ:f64 = SIN_I*L;
 pub const C: f64 = L*L-LZ*LZ;
 
 //step size and number of steps to take during integration
 pub const DT :f64 = 0.001;
-pub const NUM_ITERATIONS: i32 = 1000;
+pub const NUM_ITERATIONS: i32 = 3000;
 
 //sensitivity to mouse moving
 pub const MOVE_SCALE: f32 = 0.01;

@@ -10,7 +10,7 @@ mod radial_derivative;
 
 use roots::{Roots, find_roots_quartic};
 use egui;
-use plotters::prelude::*;
+
 use std::io;
 
 
@@ -44,7 +44,7 @@ fn main() -> eframe::Result<()> {
             eframe::run_native(
                 "Visualizer",
                 native_options,
-                Box::new(|cc| Ok(Box::new(trajectory_graph::Graph::new(cc, setup(radial_coefficients(LZ, E, C), theta_coefficients(LZ, E, C), true))))),
+                Box::new(|cc| Ok(Box::new(trajectory_graph::Graph::new(cc, setup(radial_coefficients(LZ, E, C), theta_coefficients(LZ, E, C), false))))),
             )
         }
 
@@ -78,9 +78,6 @@ fn setup(r_coefficients:[f64;5], theta_coefficients:[f64;5], simple: bool) -> ((
 
 
    println!("z plus and minus {}   {}",z_plus,z_minus);
-
-
-
 
 
 
@@ -131,7 +128,7 @@ fn setup(r_coefficients:[f64;5], theta_coefficients:[f64;5], simple: bool) -> ((
         panic!("There were less than 2 roots :( ")
     }
 
-    for i in 0..root_list.len()-1 {
+    for _i in 0..root_list.len()-1 {
        // println!("sample intermediate value: {}",coefficients_to_poly((root_list[i+1]-root_list[i])/2.0+root_list[i],r_coefficients));
     }
     let (r_start,r_min,r_max)  = if simple {
@@ -177,13 +174,9 @@ fn setup(r_coefficients:[f64;5], theta_coefficients:[f64;5], simple: bool) -> ((
         (theta_start,theta_min,theta_max)
 
     } else{
-        let mut theta_start =String::new();
-        println!("Select an initial starting value for theta:");
+        let mut theta_start =COS_I.acos();
+        println!("Starting with theta = {}",theta_start);
 
-        io::stdin()
-            .read_line(&mut theta_start)
-            .expect("Failed to read line");
-        let theta_start = theta_start.trim().parse().expect("Please type a number!");
 
         let graph = |x: f64| -> f64 {
             coefficients_to_poly(x.cos(), theta_coefficients)

@@ -36,9 +36,11 @@ impl Graph {
         context.set_visuals(egui::Visuals::light());
         let radial = integrate(vals.0.0,vals.0.1,vals.0.2, Coordinates::Radial, LZ, E, C);
         let angular = integrate(vals.1.0,vals.1.1,vals.1.2, Coordinates::Theta,LZ,E,C);
+        println!("Radial is {:?}",radial.points());
+        println!("theta is {:?}",angular.points());
         let data =find_phi(radial,angular,LZ,E);
 
-        println!("{:?}",data.0.points());
+        println!("{:?}",data.3);
         println!("r initial {}, r min {}, r max {}",vals.0.0,vals.0.1,vals.0.2);
         println!("theta initial {}, theta min {}, theta max {}",vals.1.0,vals.1.1,vals.1.2);
 
@@ -89,7 +91,7 @@ impl eframe::App for Graph {
 
             root.fill(&WHITE).unwrap();
 
-            let width = 20.0;
+            let width = 500.0;
 
             let x_axis = (-width..width).step(0.1);
             let z_axis = (-width..width).step(0.1);
@@ -122,6 +124,30 @@ impl eframe::App for Graph {
                 ))
                 .unwrap()
                 .label("Line");
+
+            chart
+                .draw_series(LineSeries::new(
+                    (0..100).map(|i| (0.0,0.0,(i as f64)/10.0)),
+                    & BLACK,
+                ))
+                .unwrap()
+                .label("Line");
+
+            chart
+                .draw_series(LineSeries::new(
+                    (0..100).map(|i| (0.0,(i as f64)/10.0,0.0)),
+                    & YELLOW,
+                ))
+                .unwrap()
+                .label("Line");
+            chart
+                .draw_series(LineSeries::new(
+                    (0..100).map(|i| ((i as f64)/10.0,0.0,0.0)),
+                    & RED,
+                ))
+                .unwrap()
+                .label("Line");
+
 
 
             root.present().unwrap();
@@ -174,7 +200,7 @@ impl eframe::App for Graph {
                                                        };
                                                    }
         );
-        println!("requesting repaint");
+
 
         std::thread::sleep(std::time::Duration::from_millis(10));
         ctx.request_repaint();

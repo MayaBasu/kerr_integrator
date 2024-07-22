@@ -12,7 +12,7 @@ pub fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     let a2 = e.powi(2)*2.0*A.powi(2)-2.0*A*lz*e-(A*e-lz).powi(2)-c-A.powi(2);
     let a1 = 2.0*M*(A*e-lz).powi(2)+2.0*M*c;
     let a0 = e.powi(2)*A.powi(4)-2.0*A*lz*e*A.powi(2)+A.powi(2)*lz.powi(2)-A.powi(2)*(A*e-lz).powi(2)-A.powi(2)*c;
-    println!("{:?}",[a0,a1,a2,a3,a4]);
+   // println!("{:?}",[a0,a1,a2,a3,a4]);
     [a0,a1,a2,a3,a4]
 }
 
@@ -28,13 +28,19 @@ pub fn r_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dr/dlambda
     coefficients_to_poly(x,coefficients).abs().sqrt()
 }
 pub fn theta_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dtheta/dlambda
-    let c = x.cos();
-    coefficients_to_poly(c,coefficients).abs().sqrt()/x.sin()
+    if A == 0.0{
+        0.0
+    }else{
+        let c = x.cos();
+        coefficients_to_poly(c,coefficients).abs().sqrt()/x.sin()
+    }
+
 }
 
 
 fn delta(r:f64) -> f64 {
     r.powi(2) - 2.0 * M * r + A.powi(2)
+
 }
 fn p(r:f64, lz:f64,e:f64) -> f64 {
     e*(r.powi(2) + A.powi(2))-A*lz
@@ -42,13 +48,19 @@ fn p(r:f64, lz:f64,e:f64) -> f64 {
 fn phi_r(r:f64, lz:f64,e:f64) -> f64{
     let d = delta(r);
     let p = p(r,lz,e);
+    if d ==0.0{
+        panic!("divided by 0")
+    }
     A*p/d
 }
 fn phi_theta(theta:f64,lz:f64) -> f64 {
+   // println!("phi theta is {}, {},{}",lz/(1.0-theta.cos().powi(2)),lz,theta.cos().powi(2));
     lz/(1.0-theta.cos().powi(2))
 }
 pub fn phi_total(theta:f64,r:f64, lz:f64,e:f64) -> f64 {
+   // println!("phi total is {}",phi_r(r,lz,e) + phi_theta(theta,lz) -A*e);
     phi_r(r,lz,e) + phi_theta(theta,lz) -A*e
+
 }
 
 
