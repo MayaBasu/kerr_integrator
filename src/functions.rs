@@ -24,7 +24,7 @@ pub fn coefficients_to_poly(x:f64, coefficients:[f64;5])-> f64{
     sum
 }
 
-pub fn r_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dr/dlambda
+pub fn r_derivative_magnitude(x:f64, coefficients:[f64;5]) ->f64{ //dr/dlambda
     coefficients_to_poly(x,coefficients).abs().sqrt()
 }
 pub fn theta_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dtheta/dlambda

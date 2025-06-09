@@ -189,7 +189,7 @@ impl eframe::App for Graph {
                                                        let coeffs = radial_coefficients(LZ,E,C);
 
                                                        //let line3 = Line::new(self.data.2);
-                                                       let linedata: PlotPoints = (0..1000).map(|i| [i as f64/0.1,r_derivative(i as f64/0.1,coeffs)]).collect();
+                                                       let linedata: PlotPoints = (0..1000).map(|i| [i as f64/0.1, r_derivative_magnitude(i as f64/0.1, coeffs)]).collect();
                                                        let line3 = Line::new(linedata);
 
 

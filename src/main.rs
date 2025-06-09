@@ -5,47 +5,61 @@ mod constants;
 use crate::numeric_solvers::root_hunt_and_peck;
 use crate::functions::*;
 use crate::constants::*;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use csv::Writer;
 
-mod radial_derivative;
+mod derivatives;
 
 use roots::{Roots, find_roots_quartic};
 use egui;
 
 use std::io;
+use serde::Serialize;
 
+fn main() -> Result<(), Box<dyn Error>>{
 
-fn main() -> eframe::Result<()> {
-
-    println!("Please select a functionality: show radial derivative (1), plot (2).");
-    let mut func = String::new();
+    println!("Please select a functionality: show radial derivative (1), theta derivative (2).");
+    let mut input = String::new();
     io::stdin()
-        .read_line(&mut func)
+        .read_line(&mut input)
         .expect("Failed to read line");
-    let func: u32 = func.trim().parse().expect("Please type 1 or 2");
+    let input: u32 = input.trim().parse().expect("Please type 1 or 2");
 
-    let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size((1600.0, 800.0)),
-        ..eframe::NativeOptions::default()
-    };
-
-    match func {
+    match input {
         1 => {
             println!("Setting up the radial derivative ...");
-            eframe::run_native(
-                "Visualizer",
-                native_options,
-                Box::new(|cc| Ok(Box::new(radial_derivative::RadialGraph::new(cc)))),
-            )
+            let radialgraph = derivatives::RadialGraph::new();
 
+            let j = serde_json::to_string(&radialgraph)?;
+
+            // Print, write to a file, or send to an HTTP server.
+            println!("{}", j);
+
+           // let mut wtr = Writer::from_path("foo.csv")?;
+         //   wtr.serialize(radialgraph)?;
+            let mut file = File::create("output.json")?;
+            file.write_all(j.as_bytes())?;
+            Ok(())
 
         }
-        2=> {
-            println!("Plotting the trajectory");
-            eframe::run_native(
-                "Visualizer",
-                native_options,
-                Box::new(|cc| Ok(Box::new(trajectory_graph::Graph::new(cc, setup(radial_coefficients(LZ, E, C), theta_coefficients(LZ, E, C), false))))),
-            )
+
+        2 => {
+            println!("Setting up the theta derivative ...");
+            let radialgraph = derivatives::RadialGraph::new();
+
+            let j = serde_json::to_string(&radialgraph)?;
+
+            // Print, write to a file, or send to an HTTP server.
+            println!("{}", j);
+
+            // let mut wtr = Writer::from_path("foo.csv")?;
+            //   wtr.serialize(radialgraph)?;
+            let mut file = File::create("output.json")?;
+            file.write_all(j.as_bytes())?;
+            Ok(())
+
         }
 
             _=> {println!("Please select 1 or 2"); panic!();}

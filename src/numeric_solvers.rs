@@ -59,7 +59,7 @@ pub fn integrate(y_start:f64, y_min:f64,y_max:f64, coordinate:Coordinates,lz:f64
     };
 
     let derivative= match &coordinate  {  // pick out derivative function
-        Coordinates::Radial => r_derivative,
+        Coordinates::Radial => r_derivative_magnitude,
         Coordinates::Theta =>  theta_derivative,
     };
 
