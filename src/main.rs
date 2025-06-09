@@ -47,12 +47,12 @@ fn main() -> Result<(), Box<dyn Error>>{
 
         2 => {
             println!("Setting up the theta derivative ...");
-            let radialgraph = derivatives::RadialGraph::new();
+            let thetagraph = derivatives::ThetaGraph::new();
 
-            let j = serde_json::to_string(&radialgraph)?;
+            let j = serde_json::to_string(&thetagraph)?;
 
             // Print, write to a file, or send to an HTTP server.
-            println!("{}", j);
+           // println!("{}", j);
 
             // let mut wtr = Writer::from_path("foo.csv")?;
             //   wtr.serialize(radialgraph)?;

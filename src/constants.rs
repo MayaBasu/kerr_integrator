@@ -1,7 +1,7 @@
 
 //no hair
 pub const M: f64 = 1.0;
-pub const A: f64 = 0.0;
+pub const A: f64 = 0.9999;
 
 //manually adjusted constants
 pub const E:f64 =0.999;

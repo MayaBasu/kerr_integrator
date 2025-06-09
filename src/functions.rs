@@ -33,6 +33,7 @@ pub fn theta_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dtheta/dlambda
     }else{
         let c = x.cos();
         coefficients_to_poly(c,coefficients).abs().sqrt()/x.sin()
+        //coefficients_to_poly(c,coefficients).abs().sqrt()
     }
 
 }
