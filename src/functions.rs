@@ -1,4 +1,5 @@
-use crate::constants::{A,M};
+use roots::{find_roots_quartic, Roots};
+use crate::constants::{A, M};
 
 pub fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{ // coefficients for 0th, cos()^2 and cos()^4
     let a0 = c;
@@ -6,6 +7,7 @@ pub fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{ // coefficients for 0
     let a4 = A.powi(2)*(1.0-e.powi(2));
     [a0,0.0,a2,0.0,a4]
 }
+//Hellsing et al (2006)
 pub fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     let a4 = e.powi(2)-1.0;
     let a3 = 2.0*M;
@@ -16,52 +18,35 @@ pub fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     [a0,a1,a2,a3,a4]
 }
 
-pub fn coefficients_to_poly(x:f64, coefficients:[f64;5])-> f64{
-    let mut sum = 0.0;
-    for i in 0..coefficients.len() {
-        sum += coefficients[i]*x.powi(i as i32)
+
+pub fn root_finder(coeffs:[f64;5]) -> [f64; 4] {
+    //this function takes in coefficients of a quartic and outputs a vector of roots
+    //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
+
+    match find_roots_quartic(coeffs[4], coeffs[3], coeffs[2], coeffs[1], coeffs[0]) {
+        Roots::Four(roots) =>{
+            println!("succesfully found four roots: {:?}", roots);
+            roots
+        }
+        _ => {
+            panic!("Four distinct roots were not found!")
+        }
     }
-    sum
-}
-
-pub fn r_derivative_magnitude(x:f64, coefficients:[f64;5]) ->f64{ //dr/dlambda
-    coefficients_to_poly(x,coefficients).abs().sqrt()
-}
-pub fn theta_derivative(x:f64, coefficients:[f64;5]) ->f64{ //dtheta/dlambda
-    if A == 0.0{
-        0.0
-    }else{
-        let c = x.cos();
-        coefficients_to_poly(c,coefficients).abs().sqrt()/x.sin()
-        //coefficients_to_poly(c,coefficients).abs().sqrt()
-    }
-
 }
 
 
-fn delta(r:f64) -> f64 {
-    r.powi(2) - 2.0 * M * r + A.powi(2)
+pub(crate) fn parameter_converter(roots: [f64; 4] )  {
+
+    let [r1,r2,r3,r4] = roots;
+    let p = 2.0/(M*(r1.recip()+r2.recip()));
+    let e = (p*M)/(r2)-1.0;
+    let e2 = 1.0-(p*M)/r1;
+    println!("p is {}",p);
+    println!("First with r2 is is {} and second with r1 is {}", e,e2);
+    let p4 = r4*(1.0+e)/M;
+    let p3 = r3*(1.0-e)/M;
 
 }
-fn p(r:f64, lz:f64,e:f64) -> f64 {
-    e*(r.powi(2) + A.powi(2))-A*lz
-}
-fn phi_r(r:f64, lz:f64,e:f64) -> f64{
-    let d = delta(r);
-    let p = p(r,lz,e);
-    if d ==0.0{
-        panic!("divided by 0")
-    }
-    A*p/d
-}
-fn phi_theta(theta:f64,lz:f64) -> f64 {
-   // println!("phi theta is {}, {},{}",lz/(1.0-theta.cos().powi(2)),lz,theta.cos().powi(2));
-    lz/(1.0-theta.cos().powi(2))
-}
-pub fn phi_total(theta:f64,r:f64, lz:f64,e:f64) -> f64 {
-   // println!("phi total is {}",phi_r(r,lz,e) + phi_theta(theta,lz) -A*e);
-    phi_r(r,lz,e) + phi_theta(theta,lz) -A*e
 
-}
 
 
