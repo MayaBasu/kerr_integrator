@@ -35,17 +35,27 @@ pub fn root_finder(coeffs:[f64;5]) -> [f64; 4] {
 }
 
 
-pub(crate) fn parameter_converter(roots: [f64; 4] )  {
+pub(crate) fn parameter_converter(roots: [f64; 4] ) ->  (f64,f64,f64,f64) {
 
-    let [r1,r2,r3,r4] = roots;
+    let [r4,r3,r2,r1] = roots;
     let p = 2.0/(M*(r1.recip()+r2.recip()));
     let e = (p*M)/(r2)-1.0;
     let e2 = 1.0-(p*M)/r1;
-    println!("p is {}",p);
     println!("First with r2 is is {} and second with r1 is {}", e,e2);
     let p4 = r4*(1.0+e)/M;
     let p3 = r3*(1.0-e)/M;
+    (p,e,p3,p4)
+}
 
+
+
+
+pub fn psi_to_r(psi:f64,e:f64,p:f64) -> f64{
+    p*M/(1.0 + e*psi.cos())
+}
+
+pub fn r_to_psi(r:f64,e:f64,p:f64) -> f64{
+    ((p*M/r-1.0)/e).acos()
 }
 
 
