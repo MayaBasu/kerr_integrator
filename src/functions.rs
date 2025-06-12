@@ -1,14 +1,58 @@
-use roots::{find_roots_quartic, Roots};
+use roots::{find_roots_quartic, Roots, find_roots_quadratic};
 use crate::constants::{A, M};
+use crate::structs::{RadialParams, ThetaParams};
 
-pub fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{ // coefficients for 0th, cos()^2 and cos()^4
-    let a0 = c;
-    let a2 = -(c+A.powi(2)*(1.0-e.powi(2))+lz.powi(2));
-    let a4 = A.powi(2)*(1.0-e.powi(2));
-    [a0,0.0,a2,0.0,a4]
+
+pub(crate) fn find_radial_parameters(lz:f64, e:f64, c:f64) ->  RadialParams{
+    //This function finds the parameters p,e,p3,p4 from the appendex of https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
+    //using the roots of the radial polynomial - this is to shift from E,Lx,C which determine the radial polynomial, to this other parameterization.
+
+    let [r4,r3,r2,r1] = quartic_root_finder(radial_coefficients(lz, e, c));
+
+
+    let p = 2.0/(M*(r1.recip()+r2.recip()));
+    let e = (p*M)/(r2)-1.0;
+    let e2 = 1.0-(p*M)/r1;
+    println!("First with r2 is is {} and second with r1 is {}", e,e2);
+    let p4 = r4*(1.0+e)/M;
+    let p3 = r3*(1.0-e)/M;
+
+    RadialParams{
+        p,
+        e,
+        p3,
+        p4,
+    }
+}
+
+pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
+    //This function finds the parameters p,e,p3,p4 from the appendex of https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
+    //using the roots of the radial polynomial - this is to shift from E,Lx,C which determine the radial polynomial, to this other parameterization.
+
+    let [zminus,zplus] = quadratic_root_finder(theta_coefficients(lz, e, c));
+
+    let beta = A*A*(1.0-e*e);
+    println!("theta parameter {}   {}   {}",zminus,zplus,beta);
+
+    ThetaParams{
+        beta,
+        zplus,
+        zminus
+    }
+}
+
+
+
+fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;3]{ // coefficients for 0th, cos()^2 and cos()^4
+    let a2 = 1.0;
+    let a1 = -1.0*(
+        c+lz*lz+A*A*(1.0-e*e)
+    )/(A*A*(1.0-e*e));
+    let a0= c/(A*A*(1.0-e*e));
+    [a0,a1,a2]
 }
 //Hellsing et al (2006)
-pub fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
+fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     let a4 = e.powi(2)-1.0;
     let a3 = 2.0*M;
     let a2 = e.powi(2)*2.0*A.powi(2)-2.0*A*lz*e-(A*e-lz).powi(2)-c-A.powi(2);
@@ -19,7 +63,23 @@ pub fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
 }
 
 
-pub fn root_finder(coeffs:[f64;5]) -> [f64; 4] {
+fn quadratic_root_finder(coeffs:[f64;3]) -> [f64; 2] {
+    //this function takes in coefficients of a quadratic and outputs a vector of roots
+    //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
+
+    match find_roots_quadratic(coeffs[2], coeffs[1], coeffs[0]) {
+        Roots::Two(roots) =>{
+            println!("succesfully found two roots: {:?}", roots);
+            roots
+        }
+        _ => {
+            panic!("Two distinct roots were not found!")
+        }
+    }
+}
+
+
+fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
     //this function takes in coefficients of a quartic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
 
@@ -35,28 +95,8 @@ pub fn root_finder(coeffs:[f64;5]) -> [f64; 4] {
 }
 
 
-pub(crate) fn parameter_converter(roots: [f64; 4] ) ->  (f64,f64,f64,f64) {
 
-    let [r4,r3,r2,r1] = roots;
-    let p = 2.0/(M*(r1.recip()+r2.recip()));
-    let e = (p*M)/(r2)-1.0;
-    let e2 = 1.0-(p*M)/r1;
-    println!("First with r2 is is {} and second with r1 is {}", e,e2);
-    let p4 = r4*(1.0+e)/M;
-    let p3 = r3*(1.0-e)/M;
-    (p,e,p3,p4)
+pub fn delta(r:f64) -> f64{
+
+    r*r-2.0*M*r+A*A
 }
-
-
-
-
-pub fn psi_to_r(psi:f64,e:f64,p:f64) -> f64{
-    p*M/(1.0 + e*psi.cos())
-}
-
-pub fn r_to_psi(r:f64,e:f64,p:f64) -> f64{
-    ((p*M/r-1.0)/e).acos()
-}
-
-
-
