@@ -19,7 +19,7 @@ pub(crate) fn find_radial_parameters(lz:f64, e:f64, c:f64) ->  RadialParams{
 
     RadialParams{
         p,
-        e,
+        e:e2,
         p3,
         p4,
     }
@@ -88,6 +88,15 @@ fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
             println!("succesfully found four roots: {:?}", roots);
             roots
         }
+        Roots::Three(roots) =>{
+            println!("succesfully found three roots: {:?}", roots);
+            [0.0,roots[0], roots[1],roots[2]]
+        }
+        Roots::Two(roots) =>{
+            println!("succesfully found two roots: {:?}", roots);
+            [0.0,0.0, roots[0], roots[1]]
+        }
+
         _ => {
             panic!("Four distinct roots were not found!")
         }

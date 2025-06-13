@@ -3,10 +3,10 @@ use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative};
 use crate::structs::{RadialParams,ThetaParams};
 use crate::functions::delta;
 const STEP_SIZE: f64 = 0.0001;
-pub const NUM_STEPS: usize = 100000;
+pub const NUM_STEPS: usize = 1000;
 
 
-pub fn integrate_r(r_initial:f64, params:RadialParams) -> [[f64;2]; NUM_STEPS]{
+pub fn integrate_r(r_initial:f64, params:RadialParams) -> [[f64;3]; NUM_STEPS]{
     //wrapper on the integrate psi function which allows the inputs and outputs of it to be in terms of r, e
     // ven if we integrate wrt psi
     let psi = r_to_psi(r_initial,params.e, params.p);
@@ -14,6 +14,7 @@ pub fn integrate_r(r_initial:f64, params:RadialParams) -> [[f64;2]; NUM_STEPS]{
     let mut graph = integrate_psi(psi, params);
     for i in 0..NUM_STEPS{
         graph[i][1] = psi_to_r(graph[i][1],params.e,params.p);
+        graph[i][2] = psi_to_r(graph[i][2],params.e,params.p);
     }
    // println!("THE CHANGED BCK GRAPH IS {:?}", graph);
     graph
@@ -35,7 +36,7 @@ pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> [[f64;2]; NUM_S
 
 
 
-pub fn integrate_phi(radial_graph: &[[f64;2]; NUM_STEPS], theta_graph:&[[f64;2]; NUM_STEPS], lz:f64,e:f64) -> [[f64;2]; NUM_STEPS]{
+pub fn integrate_phi(radial_graph: &[[f64;3]; NUM_STEPS], theta_graph:&[[f64;2]; NUM_STEPS], lz:f64,e:f64) -> [[f64;2]; NUM_STEPS]{
 
     for i in 0..NUM_STEPS{ //check that the x axis are the same for these graphs
         assert_eq!(radial_graph[i][0],theta_graph[i][0]);
@@ -50,7 +51,7 @@ pub fn integrate_phi(radial_graph: &[[f64;2]; NUM_STEPS], theta_graph:&[[f64;2];
             theta_graph[i][1], lz,e)*STEP_SIZE;
         phi = phi + increment;
         phi_graph[i][1] = phi;
-        println!("{}",phi);
+
         phi_graph[i][0] = radial_graph[i][0];
     }
 
@@ -60,18 +61,20 @@ pub fn integrate_phi(radial_graph: &[[f64;2]; NUM_STEPS], theta_graph:&[[f64;2];
 
 
 
-fn integrate_psi(psi_initial:f64, params:RadialParams) ->[[f64;2];NUM_STEPS] {
+fn integrate_psi(psi_initial:f64, params:RadialParams) ->[[f64;3];NUM_STEPS] {
 
     let mut psi = psi_initial;
-    let mut graph= [[0.0;2]; NUM_STEPS];
+    let mut graph= [[0.0;3]; NUM_STEPS];
     let mut x = 0.0;
 
     for step in 0..NUM_STEPS{
         x = (step as f64)*STEP_SIZE;
         let increment = psi_derivative(psi,params, E)*STEP_SIZE;
         psi = psi + increment;
+        graph[step][2] = psi_derivative(psi,params, E);
         graph[step][1] = psi;
         graph[step][0] = x;
+
     }
     graph
 }

@@ -2,16 +2,16 @@ import kerrgeopy as kg
 from math import cos, pi
 import numpy as np
 import matplotlib.pyplot as plt
-#orbit = kg.StableOrbit.from_constants(0.9, 0.9, 4.3, 2.5)
-orbit = kg.StableOrbit.from_constants(0.9, 0.95, 1.6, 8)
+orbit = kg.StableOrbit(0.0, 12, 0.9, 0.5)
+#orbit = kg.StableOrbit.from_constants(0.9, 0.95, 1.6, 8)
 print(orbit.constants_of_motion())
 t, r, theta, phi = orbit.trajectory()
+#print(kg.constants_of_motion(0.0, 12, 0.9, 1.0))
+
+fig, ax = orbit.plot(0,0.1)
 
 
-fig, ax = orbit.plot(0,10)
-
-
-time = np.linspace(0,10,200)
+time = np.linspace(0,0.1,200)
 
 plt.figure(figsize=(20,4))
 

@@ -24,12 +24,14 @@ for i in range(len(datar)):
     r = datar[i][1]
     theta = datat[i][1]
     phi = datap[i][1]
+    x.append(datar[i][0])
+    y.append(datar[i][2])
 
-    x.append(r*m.sin(theta)*m.cos(phi))
-    y.append(r*m.sin(theta)*m.sin(phi))
-    z.append(r*m.cos(theta))
+ #   x.append(r*m.sin(theta)*m.cos(phi))
+  #  y.append(r*m.sin(theta)*m.sin(phi))
+   # z.append(r*m.cos(theta))
 #ax.plot3D(x, y, z, 'blue')
-ax2.plot(datat)
+ax2.plot(x,y)
 print(max(datap))
 
 

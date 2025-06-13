@@ -8,7 +8,7 @@ use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi};
 #[derive(Serialize)]
 
 pub struct Graph {
-    pub(crate) radial: Vec<[f64;2]>,
+    pub(crate) radial: Vec<[f64;3]>,
     pub(crate) theta: Vec<[f64;2]>,
     pub(crate) phi: Vec<[f64;2]>
 
@@ -19,7 +19,7 @@ impl Graph {
         let radialparams = find_radial_parameters(lz, e, c);
         let thetaparams = find_theta_parameters(lz, e, c);
 
-        let radial_graph = integrate_r(100.0, radialparams);
+        let radial_graph = integrate_r(10.0, radialparams);
         let theta_graph = integrate_theta(COS_I.acos(),thetaparams);
         let phi_graph = integrate_phi(&radial_graph, &theta_graph, lz,e);
 
