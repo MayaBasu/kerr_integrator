@@ -21,10 +21,11 @@ impl Graph {
         let thetaparams = find_theta_parameters(lz, e, c);
 
         let radial_graph = integrate_r( 1.6441, radialparams);
-        let theta_graph = integrate_theta(COS_I.acos(),thetaparams);
+        println!("zminus is {}, and initial theta is then {:?}",thetaparams.zminus, thetaparams.zminus.sqrt().acos());
+        let theta_graph = integrate_theta(thetaparams.zminus.sqrt().acos()+0.01,thetaparams);
         let phi_graph = integrate_phi(radial_graph.clone(), &theta_graph, lz,e);
 
-        println!("phi daata {:?}", phi_graph);
+       // println!("phi daata {:?}", phi_graph);
         Self{
             radial: radial_graph.to_vec(),
             theta: theta_graph.to_vec(),

@@ -22,17 +22,14 @@ use serde_arrays;
 fn main() -> Result<(), Box<dyn Error>>{
 
 
-    let radialgraph = Graph::new(LZ,E,C);
-
-    let j = serde_json::to_string(&radialgraph)?;
-
+    let graph = Graph::new(LZ,E,C);
+    let graph_json = serde_json::to_string(&graph)?;
     let mut file = File::create("outpu2t.json")?;
-    file.write_all(j.as_bytes())?;
+    file.write_all(graph_json.as_bytes())?;
+
     println!("{:?}",find_radial_parameters(LZ,E,C));
     println!("{}  {}   {}", E,LZ,C);
     Ok(())
-
-
 }
 
 

@@ -3,8 +3,8 @@ use crate::constants::{A, E, M};
 use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative};
 use crate::structs::{RadialParams,ThetaParams};
 use crate::functions::delta;
-const STEP_SIZE: f64 = 0.0001;
-pub const NUM_STEPS: usize = 500000;
+const STEP_SIZE: f64 = 0.001;
+pub const NUM_STEPS: usize = 1000;
 
 
 pub fn integrate_r(r_initial:f64, params:RadialParams) -> Box<[[f64;3]; NUM_STEPS]>{
@@ -17,12 +17,13 @@ pub fn integrate_r(r_initial:f64, params:RadialParams) -> Box<[[f64;3]; NUM_STEP
         graph[i][1] = psi_to_r(graph[i][1],params.e,params.p);
         graph[i][2] = psi_to_r(graph[i][2],params.e,params.p);
     }
-    println!("THE CHANGEkjuihD BCK GRAPH IS {:?}", graph);
+   // println!("THE CHANGEkjuihD BCK GRAPH IS {:?}", graph);
     graph
 }
 pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Box<[[f64;2]; NUM_STEPS]>{
     //wrapper on the integrate chi function which allows the inputs and outputs of it to be in terms of chi, e
     // ven if we integrate wrt chi
+    println!("theta initial is {theta_initial}");
     let chi = theta_to_chi(theta_initial,params.zminus);
  //   println!("chi is {}", chi);
     if A == 0.0{
@@ -38,7 +39,7 @@ pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Box<[[f64;2]; N
     for i in 0..NUM_STEPS{
         graph[i][1] = chi_to_theta(graph[i][1],params.zminus);
     }
-   // println!("THE CHANGED BCK GRAPH for chi IS {:?}", graph);
+    println!("THE CHANGED BCK GRAPH for chi IS {:?}", graph);
     graph
 }
 pub fn integrate_phi(radial_graph: Box<[[f64;3]; NUM_STEPS]>, theta_graph:&[[f64;2]; NUM_STEPS], lz:f64,e:f64) -> Box<[[f64;2]; NUM_STEPS]>{
@@ -78,12 +79,13 @@ fn integrate_psi(psi_initial:f64, params:RadialParams) -> Box<[[f64;3];NUM_STEPS
         graph[step][0] = x;
 
     }
-    println!("{:?}",graph);
+   // println!("{:?}",graph);
     graph
 }
 fn integrate_chi(chi_initial:f64, params:ThetaParams) ->Box<[[f64;2];NUM_STEPS]> {
 
     let mut chi = chi_initial;
+    println!("chi is {chi}");
     let mut graph= Box::new([[0.0;2]; NUM_STEPS]);
     let mut x = 0.0;
 

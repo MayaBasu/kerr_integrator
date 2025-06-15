@@ -4,14 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 #orbit = kg.StableOrbit(0.0, 12, 0.9, 0.5)
 orbit = kg.StableOrbit.from_constants(0.99,0.89,1.9,1.2)
+
 print(orbit.constants_of_motion())
 t, r, theta, phi = orbit.trajectory()
 #print(kg.constants_of_motion(0.0, 12, 0.9, 1.0))
 
 #fig, ax = orbit.plot(0,1)
+print(orbit.x)
 
-
-time = np.linspace(0,50,200)
+time = np.linspace(0,1,200)
 
 plt.figure(figsize=(20,4))
 
@@ -62,8 +63,8 @@ for i in range(len(datar)):
     r = datar[i][1]
     theta = datat[i][1]
     phi = datap[i][1]
-    x.append(datar[i][0])
-    y.append(datar[i][1])
+    x.append(datat[i][0])
+    y.append(datat[i][1])
 
 #   x.append(r*m.sin(theta)*m.cos(phi))
 #  y.append(r*m.sin(theta)*m.sin(phi))

@@ -25,7 +25,6 @@ pub(crate) fn find_radial_parameters(lz:f64, e:f64, c:f64) ->  RadialParams{
 
 
 } //clean
-
 pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
     //This function finds the parameters p,e,p3,p4 from the appendex of https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
     //using the roots of the radial polynomial - this is to shift from E,Lx,C which determine the radial polynomial, to this other parameterization.
@@ -37,7 +36,7 @@ pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
         }
     }
     let [zminus,zplus] = quadratic_root_finder(theta_coefficients(lz, e, c));
-
+    println!("zminus is {zminus} and zplus is {zplus}");
     let beta = A*A*(1.0-e*e);
     println!("theta parameter {}   {}   {}",zminus,zplus,beta);
 
@@ -47,9 +46,6 @@ pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
         zminus
     }
 }
-
-
-
 fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;3]{ // coefficients for 0th, cos()^2 and cos()^4
     let a2 = 1.0;
     let a1 = -1.0*(
@@ -58,7 +54,7 @@ fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;3]{ // coefficients for 0th, 
     let a0= c/(A*A*(1.0-e*e));
     [a0,a1,a2]
 }
-//Hellsing et al (2006)
+//Hellsing, Integra et al (2006)
 fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     let a4 = e.powi(2)-1.0;
     let a3 = 2.0*M;
@@ -69,9 +65,6 @@ fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
 
     [a0,a1,a2,a3,a4]
 } //clean
-
-
-
 fn quadratic_root_finder(coeffs:[f64;3]) -> [f64; 2] {
     //this function takes in coefficients of a quadratic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
@@ -86,8 +79,6 @@ fn quadratic_root_finder(coeffs:[f64;3]) -> [f64; 2] {
         }
     }
 }
-
-
 fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
     //this function takes in coefficients of a quartic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
@@ -111,9 +102,6 @@ fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
         }
     }
 } //clean
-
-
-
 pub fn delta(r:f64) -> f64{
 
     r*r-2.0*M*r+A*A
