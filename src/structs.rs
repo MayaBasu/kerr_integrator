@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use serde::{Serialize, Serializer};
 use crate::constants::{ COS_I};
 use crate::derivatives::phi_derivative;
@@ -19,9 +20,9 @@ impl Graph {
         let radialparams = find_radial_parameters(lz, e, c);
         let thetaparams = find_theta_parameters(lz, e, c);
 
-        let radial_graph = integrate_r(10.0, radialparams);
+        let radial_graph = integrate_r( 1.6441, radialparams);
         let theta_graph = integrate_theta(COS_I.acos(),thetaparams);
-        let phi_graph = integrate_phi(&radial_graph, &theta_graph, lz,e);
+        let phi_graph = integrate_phi(radial_graph.clone(), &theta_graph, lz,e);
 
         println!("phi daata {:?}", phi_graph);
         Self{

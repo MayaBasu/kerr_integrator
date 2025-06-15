@@ -33,34 +33,6 @@ fn main() -> Result<(), Box<dyn Error>>{
     Ok(())
 
 
-        /*
-
-    println!("Please select a functionality: show radial derivative (1), theta derivative (2).");
-    let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .expect("Failed to read line");
-    let input: u32 = input.trim().parse().expect("Please type 1 or 2");
-
-    match input {
-
-        3 => {
-
-
-
-        }
-
-            _=> {println!("Please select 1 or 2"); panic!();}
-
-    }
-
-         */
-
-
-
-
-
-
 }
 
 

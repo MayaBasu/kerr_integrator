@@ -25,7 +25,7 @@ for i in range(len(datar)):
     theta = datat[i][1]
     phi = datap[i][1]
     x.append(datar[i][0])
-    y.append(datar[i][2])
+    y.append(datar[i][1])
 
  #   x.append(r*m.sin(theta)*m.cos(phi))
   #  y.append(r*m.sin(theta)*m.sin(phi))

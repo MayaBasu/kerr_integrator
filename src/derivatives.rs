@@ -14,7 +14,7 @@ pub fn psi_derivative(psi:f64, params:RadialParams ,ee:f64) -> f64 {
         (1.0-ee*ee)
         *((p-p3)-e*(p+p3*psi.cos()))
         *((p-p4)+e*(p-p4*psi.cos()))
-    ).sqrt()/(1.0-ee*ee)
+    ).sqrt()/(1.0-e*e)
 
 }
 
