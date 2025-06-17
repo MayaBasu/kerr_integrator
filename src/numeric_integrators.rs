@@ -1,10 +1,10 @@
 
 use crate::constants::{A, E, M};
-use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative};
-use crate::structs::{RadialParams,ThetaParams};
+use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative, H_acceleration};
+use crate::structs::{Graph, RadialParams, ThetaParams};
 use crate::functions::delta;
 const STEP_SIZE: f64 = 0.001;
-pub const NUM_STEPS: usize = 1000;
+pub const NUM_STEPS: usize = 5000;
 
 
 pub fn integrate_r(r_initial:f64, params:RadialParams) -> Box<[[f64;3]; NUM_STEPS]>{
@@ -93,6 +93,7 @@ fn integrate_chi(chi_initial:f64, params:ThetaParams) ->Box<[[f64;2];NUM_STEPS]>
         x = (step as f64)*STEP_SIZE;
         let increment = chi_derivative(chi,params)*STEP_SIZE;
         chi = chi + increment;
+      //  println!("increment is {}",increment);
         graph[step][1] = chi;
         graph[step][0] = x;
     }
@@ -109,11 +110,56 @@ fn r_to_psi(r:f64,e:f64,p:f64) -> f64{
 }
 
 fn chi_to_theta(chi:f64, zminus:f64) -> f64{
-    let z = zminus*(chi.cos()).powi(2);
-    (z.sqrt()).acos()
+    (zminus.sqrt()*chi.cos()).acos()
 }
 fn theta_to_chi(theta:f64, zminus:f64) -> f64{
     let z = (theta.cos()).powi(2);
     ((z/zminus).sqrt()).acos()
 }
 
+
+
+fn integrate_H(graph:Graph,h_der_initial:f64,h_initial:f64)->Box<[[f64;2]; NUM_STEPS]>{
+    let h_derivative = find_H_derivative(graph,h_der_initial)
+    let mut chi = chi_initial;
+    println!("chi is {chi}");
+    let mut graph= Box::new([[0.0;2]; NUM_STEPS]);
+    let mut x = 0.0;
+
+    for step in 0..NUM_STEPS{
+        x = (step as f64)*STEP_SIZE;
+        let increment = chi_derivative(chi,params)*STEP_SIZE;
+        chi = chi + increment;
+        //  println!("increment is {}",increment);
+        graph[step][1] = chi;
+        graph[step][0] = x;
+    }
+    graph
+}
+
+
+}
+fn find_H_derivative(graph:Graph, h_der_initial:f64) -> Box<[[f64;2]; NUM_STEPS]>{
+
+    let mut hder = h_der_initial;
+    println!("h initial is  is {h}");
+    let mut h_der_graph= Box::new([[0.0;2]; NUM_STEPS]);
+    let mut x = 0.0;
+
+    for i in 0..NUM_STEPS{ //check that the x axis are the same for these graphs
+        assert_eq!(graph.radial[i][0],graph.theta[i][0]);
+    }
+    assert_eq!(STEP_SIZE,graph.radial[2][0]-graph.radial[1][0] ); // check that the stepsize is consistant between the graphs
+
+    for i in 0..NUM_STEPS{
+        let increment = H_acceleration(graph.radial[i][1], graph.theta[i][1], hder) *STEP_SIZE;
+        hder = hder + increment;
+        h_der_graph[i][1] = hder;
+
+        h_der_graph[i][0] = graph.radial[i][0];
+    }
+
+    h_der_graph
+
+
+}

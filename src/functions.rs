@@ -1,5 +1,5 @@
 use roots::{find_roots_quartic, Roots, find_roots_quadratic};
-use crate::constants::{A, M};
+use crate::constants::{A, M,K};
 use crate::structs::{RadialParams, ThetaParams};
 
 
@@ -105,4 +105,16 @@ fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
 pub fn delta(r:f64) -> f64{
 
     r*r-2.0*M*r+A*A
+}
+
+pub fn sigma(r:f64, theta:f64) -> f64{
+    r.powi(2) + A.powi(2)*theta.cos().powi(2)
+
+}
+pub fn R(theta:f64)-> f64{
+    K-A.powi(2)*theta.cos().powi(2)
+}
+
+pub fn S(r:f64)-> f64{
+    r.powi(2)+K
 }
