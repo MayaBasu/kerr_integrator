@@ -22,17 +22,22 @@ fn main() -> Result<(), Box<dyn Error>>{
 
 
     let graph = Graph::new(LZ,E,C);
+
+
     let stream = Stream{
-        h:integrate_H(&graph,0.0,0.8).to_vec() //2.35
+        h:integrate_H(&graph,0.0,0.92).to_vec() //2.35
     };
 
     let graph_json = serde_json::to_string(&graph)?;
-    let mut file = File::create("stream_width.json")?;
+    let mut file = File::create("ballistic_graph.json")?;
     file.write_all(graph_json.as_bytes())?;
 
+
     let graph_stream = serde_json::to_string(&stream)?;
-    let mut file = File::create("ballistic_graph.json")?;
+    let mut file = File::create("stream_width.json")?;
     file.write_all(graph_stream.as_bytes())?;
+
+
 
 
 

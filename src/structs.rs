@@ -5,7 +5,7 @@ use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi};
 
 #[derive(Serialize)]
 pub struct Graph {
-    pub(crate) radial: Vec<[f64;3]>,
+    pub(crate) radial: Vec<[f64;2]>,
     pub(crate) theta: Vec<[f64;2]>,
     pub(crate) phi: Vec<[f64;2]>
 }
@@ -20,10 +20,11 @@ impl Graph {
         let radial_params = find_radial_parameters(lz, e, c);
         let theta_params = find_theta_parameters(lz, e, c); //9979
 
-        let radial_graph = integrate_r(9979.0/2.0, radial_params);
+        let radial_graph = integrate_r(10000.0/2.0, radial_params);
+
         println!("z minus is {}, and initial theta is then {:?}", theta_params.z_minus, theta_params.z_minus.sqrt().acos());
         let theta_graph = integrate_theta(theta_params.z_minus.sqrt().acos()+0.01, theta_params);
-        let phi_graph = integrate_phi(radial_graph.clone(), &theta_graph, lz,e);
+        let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), lz,e);
 
        // println!("phi daata {:?}", phi_graph);
         Self{

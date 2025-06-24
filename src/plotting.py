@@ -48,13 +48,13 @@ print("hello")
 
 import json
 
-with open('../outpu2t.json', 'r') as file:
+with open('../ballistic_graph.json', 'r') as file:
     data = json.load(file)
 
 
 
 
-with open('../outpu3t.json', 'r') as file:
+with open('../stream_width.json', 'r') as file:
     streamdata = json.load(file)["h"]
 print(streamdata)
 
