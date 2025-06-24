@@ -108,11 +108,12 @@ pub fn delta(r:f64) -> f64{
 }
 
 pub fn sigma(r:f64, theta:f64) -> f64{
-    r.powi(2) + A.powi(2)*theta.cos().powi(2)
+    r.powi(2) + A.powi(2)*(theta.cos()).powi(2)
 
 }
 pub fn R(theta:f64)-> f64{
-    K-A.powi(2)*theta.cos().powi(2)
+
+    K-A.powi(2)*(theta.cos()).powi(2)
 }
 
 pub fn S(r:f64)-> f64{

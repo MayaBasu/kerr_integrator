@@ -15,12 +15,18 @@ pub struct Graph {
 
 }
 
+
+#[derive(Serialize)]
+pub struct Stream {
+    pub(crate) h: Vec<[f64;2]>
+}
+
 impl Graph {
     pub fn new(lz:f64,e:f64, c:f64) -> Self {
         let radialparams = find_radial_parameters(lz, e, c);
-        let thetaparams = find_theta_parameters(lz, e, c);
+        let thetaparams = find_theta_parameters(lz, e, c); //9979
 
-        let radial_graph = integrate_r( 20.0, radialparams);
+        let radial_graph = integrate_r(  9979.0/2.0, radialparams);
         println!("zminus is {}, and initial theta is then {:?}",thetaparams.zminus, thetaparams.zminus.sqrt().acos());
         let theta_graph = integrate_theta(thetaparams.zminus.sqrt().acos()+0.01,thetaparams);
         let phi_graph = integrate_phi(radial_graph.clone(), &theta_graph, lz,e);

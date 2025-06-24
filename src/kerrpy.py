@@ -50,6 +50,14 @@ import json
 
 with open('../outpu2t.json', 'r') as file:
     data = json.load(file)
+
+
+
+
+with open('../outpu3t.json', 'r') as file:
+    streamdata = json.load(file)["h"]
+print(streamdata)
+
 datap = data["phi"]
 datat = data["theta"]
 datar = data["radial"]
@@ -68,6 +76,10 @@ z = []
 x3 = []
 y3 = []
 z3 =[]
+
+
+streamdatalist = []
+streamdatax = []
 for i in range(len(datar)):
     r = datar[i][1]
     theta = datat[i][1]
@@ -80,7 +92,9 @@ for i in range(len(datar)):
     x3.append(r*m.sin(theta)*m.cos(phi))
     y3.append(r*m.sin(theta)*m.sin(phi))
     z3.append(r*m.cos(theta))
-
+    streamdatalist.append(streamdata[i][1])
+    streamdatax.append(streamdata[i][0])
+    print(r)
 ax.plot3D(x3, y3, z3, 'blue')
 
 plt.figure(figsize=(20,4))
@@ -100,7 +114,8 @@ plt.plot(x, yp)
 plt.xlabel("$\lambda$")
 plt.ylabel(r"$\theta(\lambda)$")
 
-
+plt.figure()
+plt.plot(streamdatax,streamdatalist)
 
 
 

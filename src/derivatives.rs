@@ -46,11 +46,21 @@ pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
     let sigma = sigma(r,theta);
     let R = R(theta);
     let S = S(r);
-
+   // println!("R is {R} and S is {S} and sigma is {sigma}");
+    //println!("{H}");
+    /*println!("{:?}",-H*(
+        (r/(sigma.powi(3)))*
+            (r.powi(2)-3.0*A*A*theta.cos().powi(2))*
+            (1.0+
+                3.0*(r.powi(2)*R.powi(2)-A.powi(2)*(theta.cos()).powi(2)*S.powi(2))/
+            (K*sigma.powi(2)))
+    ));*/
     -H*(
         (r/(sigma.powi(3)))*
             (r.powi(2)-3.0*A*A*theta.cos().powi(2))*
-            (1.0+3.0*(r.powi(2)*R.powi(2)-A.powi(2)*theta.cos().powi(2)*S.powi(2)))/
-            (K*sigma.powi(2))
+            (1.0+
+                3.0*(r.powi(2)*R.powi(2)-A.powi(2)*(theta.cos()).powi(2)*S.powi(2))/
+                    (K*sigma.powi(2)))
     )
+
 }
