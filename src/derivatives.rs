@@ -1,4 +1,4 @@
-
+#![allow(non_snake_case)]
 use crate::constants::*;
 use crate::functions::{delta, R, S, sigma};
 use crate::structs::{RadialParams, ThetaParams};
@@ -17,13 +17,10 @@ pub fn psi_derivative(psi:f64, params:RadialParams ,ee:f64) -> f64 {
     ).sqrt()/(1.0-e*e)
 
 }
-
-
-
 pub fn chi_derivative(chi:f64, params:ThetaParams) -> f64 {
     let beta = params.beta;
-    let zplus = params.zplus;
-    let zminus = params.zminus;
+    let zplus = params.z_plus;
+    let zminus = params.z_minus;
     //A3 from  https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
 
     (
@@ -40,21 +37,11 @@ pub fn phi_derivative(r:f64,theta:f64, lz:f64, e:f64) -> f64{
     )
     -A*A*lz/(delta(r))
 }
-
-
 pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
     let sigma = sigma(r,theta);
     let R = R(theta);
     let S = S(r);
-   // println!("R is {R} and S is {S} and sigma is {sigma}");
-    //println!("{H}");
-    /*println!("{:?}",-H*(
-        (r/(sigma.powi(3)))*
-            (r.powi(2)-3.0*A*A*theta.cos().powi(2))*
-            (1.0+
-                3.0*(r.powi(2)*R.powi(2)-A.powi(2)*(theta.cos()).powi(2)*S.powi(2))/
-            (K*sigma.powi(2)))
-    ));*/
+    //Equation 8 from ``General relativistic stream crossing in tidal disruption events"
     -H*(
         (r/(sigma.powi(3)))*
             (r.powi(2)-3.0*A*A*theta.cos().powi(2))*

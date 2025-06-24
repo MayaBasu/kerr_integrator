@@ -1,8 +1,9 @@
+#![allow(non_snake_case)]
 use roots::{find_roots_quartic, Roots, find_roots_quadratic};
 use crate::constants::{A, M,K};
 use crate::structs::{RadialParams, ThetaParams};
 
-
+//Hellsing, Integra et al (2006)
 pub(crate) fn find_radial_parameters(lz:f64, e:f64, c:f64) ->  RadialParams{
     //This function finds the parameters p,e,p3,p4 from the appendex of https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
     //using the roots of the radial polynomial - this is to shift from E,Lx,C which determine the radial polynomial, to this other parameterization.
@@ -31,8 +32,8 @@ pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
     if A==0.0{
         return ThetaParams{
             beta:0.0,
-            zplus:0.0,
-            zminus:0.0
+            z_plus:0.0,
+            z_minus:0.0
         }
     }
     let [zminus,zplus] = quadratic_root_finder(theta_coefficients(lz, e, c));
@@ -42,8 +43,8 @@ pub(crate) fn find_theta_parameters(lz:f64, e:f64, c:f64) ->  ThetaParams{
 
     ThetaParams{
         beta,
-        zplus,
-        zminus
+        z_plus: zplus,
+        z_minus: zminus
     }
 }
 fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;3]{ // coefficients for 0th, cos()^2 and cos()^4
@@ -54,7 +55,6 @@ fn theta_coefficients(lz:f64, e:f64, c:f64) ->[f64;3]{ // coefficients for 0th, 
     let a0= c/(A*A*(1.0-e*e));
     [a0,a1,a2]
 }
-//Hellsing, Integra et al (2006)
 fn radial_coefficients(lz:f64, e:f64, c:f64) ->[f64;5]{
     let a4 = e.powi(2)-1.0;
     let a3 = 2.0*M;
@@ -106,7 +106,6 @@ pub fn delta(r:f64) -> f64{
 
     r*r-2.0*M*r+A*A
 }
-
 pub fn sigma(r:f64, theta:f64) -> f64{
     r.powi(2) + A.powi(2)*(theta.cos()).powi(2)
 
@@ -115,7 +114,6 @@ pub fn R(theta:f64)-> f64{
 
     K-A.powi(2)*(theta.cos()).powi(2)
 }
-
 pub fn S(r:f64)-> f64{
     r.powi(2)+K
 }
