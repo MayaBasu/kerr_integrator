@@ -41,6 +41,8 @@ with open('../stream_width.json', 'r') as file:
 phi_graph = ballistic_data["phi"]
 theta_graph = ballistic_data["theta"]
 radial_graph = ballistic_data["radial"]
+intersection_points = ballistic_data["self_intersections"]
+print(intersection_points)
 
 phi_values = []
 theta_values = []
@@ -88,7 +90,7 @@ for i in range(len(x_axis)):
     r_ratio.append(radial_graph[i][1]/(r_kg_value))
 
 
-print(r_ratio)
+#print(r_ratio)
 ax.plot3D(x3, y3, z3, 'blue')
 
 
@@ -106,9 +108,26 @@ plt.ylabel(r"$\phi(\lambda)$")
 
 axs[2,1].plot(x_axis,r_ratio)
 
+fig = plt.figure(figsize=(6, 6))
+azis = plt.axes()
 
-axs[2,2].plot(x3,y3)
-axs[2,2].scatter(x3[200],y3[200])
+azis.plot(x3,y3)
+for i, intersection in enumerate(intersection_points):
+
+    color = (0,1,i*(1/(len(intersection_points))))
+    azis.scatter(x3[intersection[0]],y3[intersection[0]], color = color)
+    azis.scatter(x3[intersection[0]+1],y3[intersection[0]+1], color = color)
+
+    color = (1,0,i*(1/(len(intersection_points))))
+
+    azis.scatter(x3[intersection[1]+1],y3[intersection[1]+1], color = color)
+    azis.scatter(x3[intersection[1]],y3[intersection[1]], color = color)
+
+
+
+#axs[2,2].scatter(x3[481],y3[481])
+
+#axs[2,2].scatter(x3[382],y3[382])
 
 #plt.plot(stream_x_axis, r_ratio)
 

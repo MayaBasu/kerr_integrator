@@ -7,7 +7,8 @@ use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi};
 pub struct Graph {
     pub(crate) radial: Vec<[f64;2]>,
     pub(crate) theta: Vec<[f64;2]>,
-    pub(crate) phi: Vec<[f64;2]>
+    pub(crate) phi: Vec<[f64;2]>,
+    pub(crate) self_intersections: Vec<(usize,usize)>
 }
 
 #[derive(Serialize)]
@@ -33,28 +34,28 @@ impl Graph {
                    // println!("going up");
                     (phi_graph[primary_interval_start_index][1],
                     phi_graph[primary_interval_start_index+1][1],
-                    radial_graph[primary_interval_start_index][1],
-                    radial_graph[primary_interval_start_index+1][1])
+                    radial_graph[primary_interval_start_index][1]*theta_graph[primary_interval_start_index][1].sin(),
+                    radial_graph[primary_interval_start_index+1][1]*theta_graph[primary_interval_start_index+1][1].sin())
 
 
                 }else{
                   //  println!("goingdown");
                     (phi_graph[primary_interval_start_index+1][1],
                      phi_graph[primary_interval_start_index][1],
-                     radial_graph[primary_interval_start_index+1][1],
-                     radial_graph[primary_interval_start_index][1])
+                     radial_graph[primary_interval_start_index+1][1]*theta_graph[primary_interval_start_index+1][1].sin(),
+                     radial_graph[primary_interval_start_index][1]*theta_graph[primary_interval_start_index][1].sin())
                 };
 
                 let (C_phi,D_phi,C_r,D_r) = if radial_graph[secondary_interval_start_index][1] < radial_graph[secondary_interval_start_index+1][1]{
                     (phi_graph[secondary_interval_start_index][1],
                     phi_graph[secondary_interval_start_index+1][1],
-                    radial_graph[secondary_interval_start_index][1],
-                    radial_graph[secondary_interval_start_index+1][1])
+                    radial_graph[secondary_interval_start_index][1]*theta_graph[secondary_interval_start_index][1].sin(),
+                    radial_graph[secondary_interval_start_index+1][1]*theta_graph[secondary_interval_start_index+1][1].sin())
                 }else{
                     (phi_graph[secondary_interval_start_index+1][1],
                      phi_graph[secondary_interval_start_index][1],
-                     radial_graph[secondary_interval_start_index+1][1],
-                     radial_graph[secondary_interval_start_index][1])
+                     radial_graph[secondary_interval_start_index+1][1]*theta_graph[secondary_interval_start_index+1][1].sin(),
+                     radial_graph[secondary_interval_start_index][1]*theta_graph[secondary_interval_start_index][1].sin())
                 };
 
                 let A_phi = A_phi%(2.0* std::f64::consts::PI);
@@ -67,11 +68,11 @@ impl Graph {
 
                 let delta_r_1 = A_r-D_r;
                 let delta_r_2 = B_r-C_r;
-                println!("{}",delta_phi_1 * delta_phi_2);
+               // println!("{}",delta_phi_1 * delta_phi_2);
 
-                if (delta_phi_1 * delta_phi_2 < 0.0) && (delta_r_2*delta_r_1<0.0) {
-                    intersection_points.push(primary_interval_start_index);
-                    break
+                if (delta_phi_1 * delta_phi_2 < 0.0)  && (delta_r_2*delta_r_1<0.0) && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0) { // && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0)
+                    println!("{}   {}",delta_phi_1 , delta_phi_2);
+                    intersection_points.push((primary_interval_start_index,secondary_interval_start_index));
                 }
             }
         }
@@ -110,7 +111,8 @@ impl Graph {
         Self{
             radial: radial_graph.to_vec(),
             theta: theta_graph.to_vec(),
-            phi: phi_graph.to_vec()
+            phi: phi_graph.to_vec(),
+            self_intersections:intersection_points
         }
     }
 }
