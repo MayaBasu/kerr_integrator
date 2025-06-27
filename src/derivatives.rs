@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use crate::constants::*;
+use crate::constants::{A, M,K};
 use crate::functions::{delta, R, S, sigma};
 use crate::structs::{RadialParams, ThetaParams};
 

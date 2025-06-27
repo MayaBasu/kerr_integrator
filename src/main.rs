@@ -18,10 +18,12 @@ use crate::structs::{Graph, Stream};
 
 fn main() -> Result<(), Box<dyn Error>>{
     println!("{:?}",find_radial_parameters(LZ,E,C));
-    println!("E: {}  \n L_z: {}  \n C: {}", E,LZ,C);
+    println!("E: {}  \n L_z: {}  \n C: {} \n L: {} \n cos I: {}", E,LZ,C,(C+LZ*LZ).sqrt(), C.sqrt()/((C+LZ*LZ).sqrt()));
 
 
     let graph = Graph::new(LZ,E,C);
+  //  println!("{:?}",graph.phi);
+
 
 
     let stream = Stream{

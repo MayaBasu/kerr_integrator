@@ -20,11 +20,91 @@ impl Graph {
         let radial_params = find_radial_parameters(lz, e, c);
         let theta_params = find_theta_parameters(lz, e, c); //9979
 
-        let radial_graph = integrate_r(10000.0/2.0, radial_params);
+        let (radial_graph,armpositions) = integrate_r(2.37896861, 2.37896861,4.315260870513532, radial_params);
 
         println!("z minus is {}, and initial theta is then {:?}", theta_params.z_minus, theta_params.z_minus.sqrt().acos());
-        let theta_graph = integrate_theta(theta_params.z_minus.sqrt().acos()+0.01, theta_params);
+        let theta_graph = integrate_theta(theta_params.z_minus.sqrt().acos()+0.01, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
         let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), lz,e);
+
+        let mut intersection_points = Vec::new();
+        for primary_interval_start_index in 0..radial_graph.len()-1 {
+            for secondary_interval_start_index in 0..primary_interval_start_index {
+                let (A_phi,B_phi,A_r,B_r) = if radial_graph[primary_interval_start_index][1] < radial_graph[primary_interval_start_index+1][1]{
+                   // println!("going up");
+                    (phi_graph[primary_interval_start_index][1],
+                    phi_graph[primary_interval_start_index+1][1],
+                    radial_graph[primary_interval_start_index][1],
+                    radial_graph[primary_interval_start_index+1][1])
+
+
+                }else{
+                  //  println!("goingdown");
+                    (phi_graph[primary_interval_start_index+1][1],
+                     phi_graph[primary_interval_start_index][1],
+                     radial_graph[primary_interval_start_index+1][1],
+                     radial_graph[primary_interval_start_index][1])
+                };
+
+                let (C_phi,D_phi,C_r,D_r) = if radial_graph[secondary_interval_start_index][1] < radial_graph[secondary_interval_start_index+1][1]{
+                    (phi_graph[secondary_interval_start_index][1],
+                    phi_graph[secondary_interval_start_index+1][1],
+                    radial_graph[secondary_interval_start_index][1],
+                    radial_graph[secondary_interval_start_index+1][1])
+                }else{
+                    (phi_graph[secondary_interval_start_index+1][1],
+                     phi_graph[secondary_interval_start_index][1],
+                     radial_graph[secondary_interval_start_index+1][1],
+                     radial_graph[secondary_interval_start_index][1])
+                };
+
+                let A_phi = A_phi%(2.0* std::f64::consts::PI);
+                let B_phi = B_phi%(2.0* std::f64::consts::PI);
+                let C_phi = C_phi%(2.0* std::f64::consts::PI);
+                let D_phi = D_phi%(2.0* std::f64::consts::PI);
+
+                let delta_phi_1 =A_phi-C_phi;
+                let delta_phi_2 = B_phi-D_phi;
+
+                let delta_r_1 = A_r-D_r;
+                let delta_r_2 = B_r-C_r;
+                println!("{}",delta_phi_1 * delta_phi_2);
+
+                if (delta_phi_1 * delta_phi_2 < 0.0) && (delta_r_2*delta_r_1<0.0) {
+                    intersection_points.push(primary_interval_start_index);
+                    break
+                }
+            }
+        }
+
+
+            //code to search through each arm position end point, and, for each index less than this, I want to compute the deltas of adjacent points
+
+            /*
+        for arm_end_position_index in 0..armpositions.len()-1{
+            let arm_start = armpositions[arm_end_position_index];
+            let arm_end = armpositions[arm_end_position_index+1];
+
+            for primary_interval_start_index in arm_start..arm_end{
+            for secondary_interval_start_index in 0..arm_start{
+                let delta_phi_1 = phi_graph[secondary_interval_start_index][1]-phi_graph[primary_interval_start_index][1];
+                let delta_phi_2 = phi_graph[secondary_interval_start_index+1][1]-phi_graph[primary_interval_start_index+1][1];
+                if delta_phi_1*delta_phi_2 < 0.0{
+                    intersection_points.push(primary_interval_start_index)
+                }
+
+
+        }
+            }
+        }
+
+  */
+
+            println!("the intersection points are at {:?}", intersection_points);
+
+
+
+
+
 
        // println!("phi daata {:?}", phi_graph);
         Self{

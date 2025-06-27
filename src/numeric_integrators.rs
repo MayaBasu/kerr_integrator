@@ -4,25 +4,41 @@ use crate::constants::{A, E, M};
 use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative, H_acceleration};
 use crate::structs::{Graph, RadialParams, ThetaParams};
 
-const STEP_SIZE: f64 = 0.00001;
-pub const NUM_STEPS: usize = 400000;
+const STEP_SIZE: f64 = 0.01;
+pub const NUM_STEPS: usize = 500;
 
 
-pub fn integrate_r(r_initial:f64, params:RadialParams) -> Vec<[f64;2]>{
+pub fn integrate_r(r_initial:f64, r_min:f64,r_max:f64, params:RadialParams) -> (Vec<[f64;2]>,Vec<usize>){
     //wrapper on the integrate psi function which allows the inputs and outputs of it to be in terms of r, e
     // ven if we integrate wrt psi
     let mut psi = r_to_psi(r_initial,params.e, params.p);
     let mut r_graph= Vec::with_capacity(NUM_STEPS);
+    let mut r_arm_positions = Vec::new();
+    let mut step_since_last_arm_recording = 1000;
+
+
+
 
     for i in 0..NUM_STEPS{
+        step_since_last_arm_recording = step_since_last_arm_recording+1;
         let x = (i as f64)*STEP_SIZE;
         let increment = -psi_derivative(psi,params, E)*STEP_SIZE;
         psi = psi + increment;
-        r_graph.push([x,psi_to_r(psi,params.e,params.p)]);
+        let r = psi_to_r(psi,params.e,params.p);
+        r_graph.push([x,r]);
+        if ((r - r_min < 0.000001)||(r_max - r < 0.0001))  && (step_since_last_arm_recording > 1000){
+            println!("{step_since_last_arm_recording}   {:?}   {:?} ",r - r_min, r_max-r);
+            step_since_last_arm_recording = 0;
+            r_arm_positions.push(i);
+        }
+
 
     }
+
+
+    println!("the turning points are at {:?}",r_arm_positions);
   //  println!("graph {:?}", r_graph);
-    r_graph
+    ( r_graph,r_arm_positions)
 
 }
 pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Vec<[f64;2]>{
