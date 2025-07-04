@@ -67,10 +67,11 @@ pub fn r_derivative_propertime(r:f64, theta:f64) -> f64{
 
 } //con
 
-pub fn theta_derivative(r:f64,theta:f64)->f64{
+pub fn theta_derivative(r:f64,theta:f64)->f64{ //con
+
     let [a0,a1,a2] = theta_coefficients(LZ,E,C);
     let z = theta.cos().powi(2);
-
     ((a2*z*z + a1*z + a0)*(A*A*(1.0-E*E))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))
-}
+
+} //con
 

@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn Error>>{
         if point % 10 == 1{
             derivatives.push(
                 [theta_derivative(radial_graph[point][1], theta_graph[point][1]),
-                    ((theta_graph[point][1]-theta_graph[point-1][1])/(0.001))/(radial_graph[point][1].powi(2)+A*A*theta_graph[point][1].cos().powi(2))]
+                    ((theta_graph[point][1]-theta_graph[point-1][1])/(0.0001))/(radial_graph[point][1].powi(2)+A*A*theta_graph[point][1].cos().powi(2))]
             )
         }
 
