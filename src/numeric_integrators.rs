@@ -4,8 +4,8 @@ use crate::constants::{A, E, M};
 use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative, H_acceleration};
 use crate::structs::{Graph, RadialParams, ThetaParams};
 
-const STEP_SIZE: f64 = 0.001;
-pub const NUM_STEPS: usize = 10000;
+const STEP_SIZE: f64 = 0.0001;
+pub const NUM_STEPS: usize = 1000;
 
 
 pub fn integrate_r(r_initial:f64, r_min:f64,r_max:f64, params:RadialParams) -> (Vec<[f64;2]>,Vec<usize>){

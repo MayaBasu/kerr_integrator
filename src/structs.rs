@@ -1,7 +1,7 @@
 use serde::{Serialize};
 
 use crate::functions::{find_radial_parameters, find_theta_parameters};
-use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi};
+use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi, integrate_H};
 
 #[derive(Serialize)]
 pub struct Graph {
@@ -73,6 +73,9 @@ impl Graph {
                 if (delta_phi_1 * delta_phi_2 < 0.0)  && (delta_r_2*delta_r_1<0.0) && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0) { // && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0)
                     println!("{}   {}",delta_phi_1 , delta_phi_2);
                     intersection_points.push((primary_interval_start_index,secondary_interval_start_index));
+
+
+
                 }
             }
         }
@@ -130,3 +133,5 @@ pub struct ThetaParams{
     pub z_plus:f64,
     pub z_minus:f64,
 }
+
+
