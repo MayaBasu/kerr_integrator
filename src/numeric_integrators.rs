@@ -4,8 +4,8 @@ use crate::constants::{A, E, M};
 use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative, H_acceleration};
 use crate::structs::{Graph, RadialParams, ThetaParams};
 
-const STEP_SIZE: f64 = 0.0001;
-pub const NUM_STEPS: usize = 1000;
+const STEP_SIZE: f64 = 0.001;
+pub const NUM_STEPS: usize = 40000;
 
 
 pub fn integrate_r(r_initial:f64, r_min:f64,r_max:f64, params:RadialParams) -> (Vec<[f64;2]>,Vec<usize>){
@@ -22,7 +22,7 @@ pub fn integrate_r(r_initial:f64, r_min:f64,r_max:f64, params:RadialParams) -> (
     for i in 0..NUM_STEPS{
         step_since_last_arm_recording = step_since_last_arm_recording+1;
         let x = (i as f64)*STEP_SIZE;
-        let increment = -psi_derivative(psi,params, E)*STEP_SIZE;
+        let increment = psi_derivative(psi,params, E)*STEP_SIZE;
         psi = psi + increment;
         let r = psi_to_r(psi,params.e,params.p);
         r_graph.push([x,r]);
@@ -40,12 +40,15 @@ pub fn integrate_r(r_initial:f64, r_min:f64,r_max:f64, params:RadialParams) -> (
   //  println!("graph {:?}", r_graph);
     ( r_graph,r_arm_positions)
 
-}
+} //con
 pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Vec<[f64;2]>{
+
     //wrapper on the integrate chi function which allows the inputs and outputs of it to be in terms of chi, e
     // ven if we integrate wrt chi
     println!("theta initial is {theta_initial}");
     let mut chi = theta_to_chi(theta_initial,params.z_minus);
+    println!("chi initial is {} zminus is {}",chi,params.z_minus);
+    println!("chi initial to theta is {} zminus is {}",chi_to_theta(chi,params.z_minus),params.z_minus);
     let mut theta_graph= Vec::with_capacity(NUM_STEPS);
 
     if A == 0.0{
@@ -59,6 +62,7 @@ pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Vec<[f64;2]>{
         let x = (i as f64)*STEP_SIZE;
         let increment = chi_derivative(chi,params)*STEP_SIZE;
         chi = chi + increment;
+     //   println!("{:?}",[x,chi_to_theta(chi,params.z_minus)]);
         theta_graph.push([x,chi_to_theta(chi,params.z_minus)]);
 
     }
@@ -88,22 +92,22 @@ pub fn integrate_phi(radial_graph: Vec<[f64;2]>, theta_graph:Vec<[f64;2]>, lz:f6
 
 }
 
-
 fn psi_to_r(psi:f64,e:f64,p:f64) -> f64{
     p*M/(1.0 + e*psi.cos())
-}
+} //con
 
 fn r_to_psi(r:f64,e:f64,p:f64) -> f64{
     ((p*M/r-1.0)/e).acos()
 
 }
 
+
 fn chi_to_theta(chi:f64, zminus:f64) -> f64{
     (zminus.sqrt()*chi.cos()).acos()
 }
 fn theta_to_chi(theta:f64, zminus:f64) -> f64{
-    let z = (theta.cos()).powi(2);
-    ((z/zminus).sqrt()).acos()
+   // let z = (theta.cos()).powi(2);
+    (theta.cos()/(zminus).sqrt()).acos()
 }
 
 

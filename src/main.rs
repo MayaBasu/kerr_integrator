@@ -12,9 +12,11 @@ use crate::numeric_integrators::*;
 
 use std::error::Error;
 use crate::derivatives::{r_derivative_propertime, theta_derivative};
-
+use crate::tetrads::*;
 mod derivatives;
 mod structs;
+mod tetrads;
+
 use crate::structs::{Graph, Stream};
 
 fn main() -> Result<(), Box<dyn Error>>{
@@ -30,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let radial_graph = graph.radial.clone();
     let theta_graph = graph.theta.clone();
+    //println!("{:?}",theta_graph);
     let mut derivatives = Vec::new();
 
 
@@ -37,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     let phi_graph = graph.phi.clone();
 
-
+/*
     for intersection_point in graph.self_intersections.clone() {
         let index_1 = intersection_point.0;
         let index_2 = intersection_point.1;
@@ -68,6 +71,8 @@ fn main() -> Result<(), Box<dyn Error>>{
 
     }
 
+ */
+
 
 
 
@@ -85,6 +90,9 @@ fn main() -> Result<(), Box<dyn Error>>{
     let graph_stream = serde_json::to_string(&stream)?;
     let mut file = File::create("stream_width.json")?;
     file.write_all(graph_stream.as_bytes())?;
+
+
+
     for point in 0..radial_graph.len(){
         if point % 10 == 1{
             derivatives.push(
@@ -96,6 +104,17 @@ fn main() -> Result<(), Box<dyn Error>>{
     }
     println!("the derivatives and approximate derivatives are {:?}",derivatives);
 
+    let testpointindex = 90;
+    let r = radial_graph[testpointindex][1];
+    let theta = theta_graph[testpointindex][1];
+    println!("at point number {testpointindex}  the values are \n r: {:?} \n theta: {:?}  \n r dot: {:?} \n theta dot: {:?}",
+             r,
+             theta,
+        r_derivative_propertime(r,theta),
+             theta_derivative(r,theta)
+    );
+    println!("delta is {:?} and sigma is {:?}",delta(r),sigma(r, theta));
+    println!("the tetrad is \n w0 {:?} ", w_0(r,theta));
 
 
 

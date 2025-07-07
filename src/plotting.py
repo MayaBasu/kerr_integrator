@@ -8,7 +8,7 @@ time = np.linspace(0, 40, 200000)
 orbit = kg.StableOrbit.from_constants(0.999, 0.87, 1.9, 1.26)
 print("a p e x")
 print(kg.apex_from_constants(0.999, 0.87, 1.9, 1.26))
-t, r_kg, theta, phi = orbit.trajectory()
+t, r_kg, theta_kg, phi_kg = orbit.trajectory()
 
 print('a   E   Lz    Q')
 print(orbit.constants_of_motion())
@@ -17,17 +17,32 @@ print(orbit.constants_of_motion())
 print(" initial r is ")
 print(r_kg(time))
 
+#trim r_kg
+initial_index = 0
+found = False
+for index in range(0,200000):
+    if not found:
+        if r_kg(40*index/200000)>3:
+            initial_index = index
+            found = True
+
+
+time = np.linspace(40*initial_index/200000, 40, 200000)
+
+print("THe INTDEX IS " + str(initial_index))
+print("with value "+str(r_kg(40*initial_index/200000)))
+print("the INITIAL THETA IS AT " + str(theta_kg(40 * initial_index / 200000)))
 fig, axs = plt.subplots(3, 3)
 
 axs[0, 0].plot(time, r_kg(time))
 axs[0, 0].set_xlabel("$\lambda$")
 axs[0, 0].set_ylabel("$r(\lambda)$")
 
-axs[0, 1].plot(time, theta(time))
+axs[0, 1].plot(time, theta_kg(time))
 axs[0, 1].set_xlabel("$\lambda$")
 axs[0, 1].set_ylabel(r"$\theta(\lambda)$")
 
-axs[0, 2].plot(time, phi(time))
+axs[0, 2].plot(time, phi_kg(time))
 axs[0, 2].set_xlabel("$\lambda$")
 axs[0, 2].set_ylabel(r"$\phi(\lambda)$")
 
@@ -40,6 +55,7 @@ with open('../stream_width.json', 'r') as file:
 
 phi_graph = ballistic_data["phi"]
 theta_graph = ballistic_data["theta"]
+print(theta_graph[0])
 radial_graph = ballistic_data["radial"]
 intersection_points = ballistic_data["self_intersections"]
 print(intersection_points)
@@ -54,6 +70,8 @@ z3 = []
 
 
 r_ratio = []
+theta_ratio = []
+phi_ratio = []
 
 x_axis = []
 stream_height = []
@@ -63,6 +81,8 @@ stream_x_axis = []
 
 three_d_fig = plt.figure(figsize=(6, 6))
 ax = plt.axes(projection='3d')
+
+
 
 
 for i in range(len(radial_graph)):
@@ -83,11 +103,20 @@ for i in range(len(radial_graph)):
 
     x_axis.append(radial_graph[i][0])
 
-
 for i in range(len(x_axis)):
 
-    r_kg_value = r_kg(x_axis[i])
+    r_kg_value = r_kg(x_axis[i]+40*initial_index/200000)
     r_ratio.append(radial_graph[i][1]/(r_kg_value))
+
+    theta_kg_value = theta_kg(x_axis[i] + 40 * initial_index / 200000)
+    theta_ratio.append(theta_graph[i][1]/(theta_kg_value))
+
+    phi_kg_value = phi_kg(x_axis[i] + 40 * initial_index / 200000)
+    phi_ratio.append(phi_graph[i][1]/(phi_kg_value))
+
+
+print(theta_ratio)
+
 
 
 #print(r_ratio)
@@ -106,7 +135,13 @@ axs[1, 2].plot(x_axis, phi_values)
 plt.xlabel("$\lambda$")
 plt.ylabel(r"$\phi(\lambda)$")
 
-axs[2,1].plot(x_axis,r_ratio)
+axs[2,0].plot(x_axis,r_ratio)
+axs[2,1].plot(x_axis,theta_ratio)
+axs[2,2].plot(x_axis,phi_ratio)
+
+stream_figure = plt.figure()
+axxis = plt.axes()
+axxis.plot(stream_x_axis,stream_height)
 
 fig = plt.figure(figsize=(6, 6))
 azis = plt.axes()

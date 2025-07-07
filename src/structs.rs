@@ -21,13 +21,15 @@ impl Graph {
         let radial_params = find_radial_parameters(lz, e, c);
         let theta_params = find_theta_parameters(lz, e, c); //9979
 
-        let (radial_graph,armpositions) = integrate_r(2.37896861, 2.37896861,4.315260870513532, radial_params);
+        let (radial_graph,armpositions) = integrate_r(3.0, 2.37896861,4.315260870513532, radial_params);
 
         println!("z minus is {}, and initial theta is then {:?}", theta_params.z_minus, theta_params.z_minus.sqrt().acos());
-        let theta_graph = integrate_theta(theta_params.z_minus.sqrt().acos()+0.01, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
-        let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), lz,e);
+        let theta_graph = integrate_theta(2.0918701762172636, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
+        println!("theta initial is {:?}",theta_graph[0]);
+        let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), lz,e); //theta_params.z_minus.sqrt().acos()+0.01
 
         let mut intersection_points = Vec::new();
+        /*
         for primary_interval_start_index in 0..radial_graph.len()-1 {
             for secondary_interval_start_index in 0..primary_interval_start_index {
                 let (A_phi,B_phi,A_r,B_r) = if radial_graph[primary_interval_start_index][1] < radial_graph[primary_interval_start_index+1][1]{
@@ -104,6 +106,8 @@ impl Graph {
   */
 
             println!("the intersection points are at {:?}", intersection_points);
+
+         */
 
 
 

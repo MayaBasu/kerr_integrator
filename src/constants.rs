@@ -6,6 +6,12 @@ pub const A: f64 = 0.999;
 //manually adjusted constants
 pub const E:f64 =0.87;
 
+
+//input parameters:
+
+
+
+
 pub const  LZ:f64 = 1.9;
 pub const C: f64 = 1.26;
 
@@ -19,6 +25,8 @@ pub const COS_I: f64 = 0.5086520415608135
 ;
 
 //pub const SIN_I:f64 = (1.0-COS_I*COS_I).sqrt();
+
+
 
 
 

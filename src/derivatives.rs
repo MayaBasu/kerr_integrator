@@ -37,6 +37,28 @@ pub fn phi_derivative(r:f64,theta:f64, lz:f64, e:f64) -> f64{
     )
     -A*A*lz/(delta(r))
 }  //con
+pub fn r_derivative_propertime(r:f64, theta:f64,negative:bool) -> f64{
+    let [a0,a1,a2,a3,a4] = radial_coefficients(LZ, E, C);
+ //from https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
+    let sign = if negative{-1.0} else {1.0};
+    (
+        a4*r.powi(4)+
+            a3*r.powi(3)+
+            a2*r.powi(2)+
+            a1*r.powi(1) +
+            a0
+    ).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
+
+} //con
+pub fn theta_derivative(r:f64,theta:f64, negative:bool)->f64{ //con
+    //from https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
+    let [a0,a1,a2] = theta_coefficients(LZ,E,C);
+    let z = theta.cos().powi(2);
+    let sign = if negative{-1.0} else {1.0};
+    ((a2*z*z + a1*z + a0)*(A*A*(1.0-E*E))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
+
+} //con
+
 
 pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
     let sigma = sigma(r,theta);
@@ -52,26 +74,4 @@ pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
     )
 
 } // ?
-
-
-pub fn r_derivative_propertime(r:f64, theta:f64) -> f64{
-    let [a0,a1,a2,a3,a4] = radial_coefficients(LZ, E, C);
-
-    (
-        a4*r.powi(4)+
-        a3*r.powi(3)+
-        a2*r.powi(2)+
-        a1*r.powi(1) +
-        a0
-    ).sqrt()/(r*r+A*A*theta.cos().powi(2))
-
-} //con
-
-pub fn theta_derivative(r:f64,theta:f64)->f64{ //con
-
-    let [a0,a1,a2] = theta_coefficients(LZ,E,C);
-    let z = theta.cos().powi(2);
-    ((a2*z*z + a1*z + a0)*(A*A*(1.0-E*E))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))
-
-} //con
 
