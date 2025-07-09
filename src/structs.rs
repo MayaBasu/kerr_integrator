@@ -21,11 +21,11 @@ impl Graph {
         let radial_params = find_radial_parameters(lz, e, c);
         let theta_params = find_theta_parameters(lz, e, c); //9979
 
-        let (radial_graph,armpositions) = integrate_r(3.0, 2.37896861,4.315260870513532, radial_params);
+        let (radial_graph,armpositions) = integrate_r( 9979.0, 2.37896861,4.315260870513532, radial_params);
 
         println!("z minus is {}, and initial theta is then {:?}", theta_params.z_minus, theta_params.z_minus.sqrt().acos());
-        let theta_graph = integrate_theta(2.0918701762172636, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
-        println!("theta initial is {:?}",theta_graph[0]);
+        let theta_graph = integrate_theta(1.57, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
+        println!("theta initial is {:?}",theta_graph[0]); //theta_params.z_minus.sqrt().acos()+0.01
         let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), lz,e); //theta_params.z_minus.sqrt().acos()+0.01
 
         let mut intersection_points = Vec::new();

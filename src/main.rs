@@ -20,23 +20,20 @@ mod tetrads;
 use crate::structs::{Graph, Stream};
 
 fn main() -> Result<(), Box<dyn Error>>{
+
     println!("{:?}",find_radial_parameters(LZ,E,C));
-    println!("E: {}  \n L_z: {}  \n C: {} \n L: {} \n cos I: {}", E,LZ,C,(C+LZ*LZ).sqrt(), C.sqrt()/((C+LZ*LZ).sqrt()));
+    println!("E: {}  \nL_z: {}  \nC: {} \nL: {} \ncos I: {}", E,LZ,C,(C+LZ*LZ).sqrt(), C.sqrt()/((C+LZ*LZ).sqrt()));
 
 
     let graph = Graph::new(LZ,E,C);
     let stream = Stream{
-        h:integrate_H(&graph,0.0,0.92).to_vec() //2.35
+        h:integrate_H(&graph,0.0,0.90).to_vec() //2.35
     };
-  //  println!("{:?}",graph.phi);
 
     let radial_graph = graph.radial.clone();
     let theta_graph = graph.theta.clone();
-    //println!("{:?}",theta_graph);
+
     let mut derivatives = Vec::new();
-
-
-
 
     let phi_graph = graph.phi.clone();
 
@@ -74,14 +71,6 @@ fn main() -> Result<(), Box<dyn Error>>{
  */
 
 
-
-
-
-
-
-
-
-
     let graph_json = serde_json::to_string(&graph)?;
     let mut file = File::create("ballistic_graph.json")?;
     file.write_all(graph_json.as_bytes())?;
@@ -96,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>>{
     for point in 0..radial_graph.len(){
         if point % 10 == 1{
             derivatives.push(
-                [theta_derivative(radial_graph[point][1], theta_graph[point][1]),
+                [theta_derivative(radial_graph[point][1], theta_graph[point][1],false),
                     ((theta_graph[point][1]-theta_graph[point-1][1])/(0.0001))/(radial_graph[point][1].powi(2)+A*A*theta_graph[point][1].cos().powi(2))]
             )
         }
@@ -104,18 +93,22 @@ fn main() -> Result<(), Box<dyn Error>>{
     }
     println!("the derivatives and approximate derivatives are {:?}",derivatives);
 
-    let testpointindex = 90;
+    let testpointindex = 700;
     let r = radial_graph[testpointindex][1];
     let theta = theta_graph[testpointindex][1];
     println!("at point number {testpointindex}  the values are \n r: {:?} \n theta: {:?}  \n r dot: {:?} \n theta dot: {:?}",
              r,
              theta,
-        r_derivative_propertime(r,theta),
-             theta_derivative(r,theta)
+        r_derivative_propertime(r,theta,false),
+             theta_derivative(r,theta,false)
     );
     println!("delta is {:?} and sigma is {:?}",delta(r),sigma(r, theta));
     println!("the tetrad is \n w0 {:?} ", w_0(r,theta));
-
+    println!("the tetrad is \n w1 {:?} ", w_1(r,theta));
+    println!("the tetrad is \n w2 {:?} ", w_2(r,theta));
+    println!("the tetrad is \n w3 {:?} ", w_3(r,theta));
+    let lambda_2 = lambda_2(r,theta,r_derivative_propertime(r,theta,false),theta_derivative(r,theta,false));
+    println!("the lambda 2 in BL coordinates is {:?}",lambda_2);
 
 
 

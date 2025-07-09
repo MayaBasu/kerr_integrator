@@ -3,21 +3,21 @@ use crate::functions::{delta, sigma};
 
 pub fn w_0(r:f64, theta:f64) -> [f64;4]{
     let s = (delta(r)/sigma(r,theta)).sqrt();
-    [s,0.0,0.0,-A*s*theta.sin().sqrt()]
-}
+    [s,0.0,0.0,-A*s*theta.sin().powi(2)]
+} //con
 pub fn w_1(r:f64,theta:f64)-> [f64;4]{
     let s = (sigma(r,theta)/delta(r)).sqrt();
     [0.0,s,0.0,0.0]
-}
+} //con
 pub fn w_2(r:f64, theta:f64)-> [f64;4] {
     let s = sigma(r,theta).sqrt();
     [0.0,0.0,s,0.0]
-}
+}  //con
 pub fn w_3(r:f64, theta:f64)-> [f64;4] {
     let s = theta.sin()/(sigma(r,theta).sqrt());
     [A*s,0.0,0.0,-(r*r+A*A)*s]
 
-}
+}  //con
 
 pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64) ->[f64;4] {
     let sigma = sigma(r,theta);
@@ -27,6 +27,11 @@ pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64) ->[f64;4] {
     let lambda_2_1 = (1.0/(C*sigma*delta)).sqrt()*A*theta.cos()*(E*(r*r+A*A)-A*LZ);
     let lambda_2_2 = -(1.0/(C*sigma)).sqrt()*r*(A*E*theta.sin()-LZ/theta.sin());
     let lambda_2_3 = (sigma/C).sqrt()*r*theta_dot;
+
+    println!("lambda_2_0: {lambda_2_0}
+    \n lambda_2_1: {lambda_2_1}
+    \n lambda_2_2: {lambda_2_2}
+    \n lambda_2_3: {lambda_2_3}");
 
     let symmetric_tetrad = [w_0(r,theta),w_1(r,theta),w_2(r,theta),w_3(r,theta)];
     let tetrad_coefficients = [lambda_2_0,lambda_2_1,lambda_2_2,lambda_2_3];
@@ -41,5 +46,5 @@ pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64) ->[f64;4] {
         }
     }
     lambda_2
-}
+} //con
 

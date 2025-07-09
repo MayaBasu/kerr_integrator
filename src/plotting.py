@@ -15,7 +15,7 @@ print(orbit.constants_of_motion())
 
 
 print(" initial r is ")
-print(r_kg(time))
+#print(r_kg(time))
 
 #trim r_kg
 initial_index = 0
@@ -55,10 +55,10 @@ with open('../stream_width.json', 'r') as file:
 
 phi_graph = ballistic_data["phi"]
 theta_graph = ballistic_data["theta"]
-print(theta_graph[0])
+#print(theta_graph[0])
 radial_graph = ballistic_data["radial"]
 intersection_points = ballistic_data["self_intersections"]
-print(intersection_points)
+#print(intersection_points)
 
 phi_values = []
 theta_values = []
@@ -103,6 +103,23 @@ for i in range(len(radial_graph)):
 
     x_axis.append(radial_graph[i][0])
 
+initial_index = 0
+initial_passage = False
+found = False
+for index in range(0,40000):
+    if not found:
+        if radial_values[index]<100:
+            initial_passage = True
+        if initial_passage:
+            if radial_values[index]>5000:
+                initial_index = index
+                found = True
+
+print("THe INTDEX IS " + str(initial_index))
+print("with value "+str(radial_values[initial_index]))
+print("the INITIAL THETA IS AT " + str(theta_values[initial_index]))
+print('the stream at this point is' + str(stream_height[initial_index]))
+print("The derivative is " + str((stream_height[initial_index]-stream_height[initial_index-1])/(radial_values[initial_index]-radial_values[initial_index-1])))
 for i in range(len(x_axis)):
 
     r_kg_value = r_kg(x_axis[i]+40*initial_index/200000)
@@ -115,7 +132,7 @@ for i in range(len(x_axis)):
     phi_ratio.append(phi_graph[i][1]/(phi_kg_value))
 
 
-print(theta_ratio)
+#print(theta_ratio)
 
 
 

@@ -4,7 +4,7 @@ use crate::constants::{A, E, M};
 use crate::derivatives::{psi_derivative, chi_derivative, phi_derivative, H_acceleration};
 use crate::structs::{Graph, RadialParams, ThetaParams};
 
-const STEP_SIZE: f64 = 0.001;
+const STEP_SIZE: f64 = 0.0001;
 pub const NUM_STEPS: usize = 40000;
 
 
@@ -68,7 +68,7 @@ pub fn integrate_theta(theta_initial:f64, params:ThetaParams) -> Vec<[f64;2]>{
     }
     //println!("THE CHANGED BCK GRAPH for chi IS {:?}", graph);
     theta_graph
-}
+} //con
 
 pub fn integrate_phi(radial_graph: Vec<[f64;2]>, theta_graph:Vec<[f64;2]>, lz:f64,e:f64) -> Vec<[f64;2]>{
 
@@ -99,16 +99,16 @@ fn psi_to_r(psi:f64,e:f64,p:f64) -> f64{
 fn r_to_psi(r:f64,e:f64,p:f64) -> f64{
     ((p*M/r-1.0)/e).acos()
 
-}
+} //con
 
 
 fn chi_to_theta(chi:f64, zminus:f64) -> f64{
     (zminus.sqrt()*chi.cos()).acos()
-}
+} //con
 fn theta_to_chi(theta:f64, zminus:f64) -> f64{
    // let z = (theta.cos()).powi(2);
     (theta.cos()/(zminus).sqrt()).acos()
-}
+} //con
 
 
 
@@ -118,8 +118,13 @@ pub fn integrate_H(trajectory_graph:&Graph,h_der_initial:f64,h_initial:f64)->Vec
     let mut phi_graph= Vec::with_capacity(NUM_STEPS);
     let mut steps_since_flip = 0;
     let mut flipped = false;
+    for step in 0..145{
+        println!("{:?}",trajectory_graph.radial[step][1]);
+        phi_graph.push([trajectory_graph.radial[step][1],h]);
 
-    for step in 0..NUM_STEPS{
+    }
+
+    for step in 145..NUM_STEPS{
         steps_since_flip = steps_since_flip + 1;
         let d_tau = STEP_SIZE*(trajectory_graph.radial[step][1].powi(2)+A*A*trajectory_graph.theta[step][1].cos().powi(2));
         let velocity_increment = H_acceleration(trajectory_graph.radial[step][1],
@@ -137,7 +142,11 @@ pub fn integrate_H(trajectory_graph:&Graph,h_der_initial:f64,h_initial:f64)->Vec
        }else{
            (flipped, steps_since_flip,h_velocity)
        };
+
         h = h + h_velocity*d_tau;
+
+
+
         phi_graph.push([trajectory_graph.radial[step][1],h]);
     }
     phi_graph

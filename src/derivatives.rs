@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use crate::constants::{A, M,K,LZ,E,C};
+use crate::constants::{A,M,K,LZ,E,C};
 use crate::functions::{delta, R, S, sigma, radial_coefficients, theta_coefficients};
 use crate::structs::{RadialParams, ThetaParams};
 
@@ -58,7 +58,6 @@ pub fn theta_derivative(r:f64,theta:f64, negative:bool)->f64{ //con
     ((a2*z*z + a1*z + a0)*(A*A*(1.0-E*E))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
 
 } //con
-
 
 pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
     let sigma = sigma(r,theta);
