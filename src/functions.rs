@@ -117,11 +117,9 @@ pub fn R(theta:f64)-> f64{
 pub fn S(r:f64)-> f64{
     r.powi(2)+K
 }
-
 pub fn P(r:f64)->f64{
     E*(r*r+A*A)-A*LZ
 }
-
 pub fn rest_mass_squared(theta_min:f64)->f64{
     (
         (C)/((theta_min.cos()).powi(2))
