@@ -1,7 +1,7 @@
 
 //no hair
 pub const M: f64 = 1.0;
-pub const A: f64 = 0.8;
+pub const A: f64 = 0.9;
 
 //manually adjusted constants
 pub const E:f64 =0.9999;
@@ -32,7 +32,7 @@ pub const C:f64 = 6.5*6.5*(1.0-0.5*0.5);
 
 
 
-pub const K:f64 = (LZ-A*E)*(LZ-A*E)+C; //Batra paper
+
 
 
 //pub const L:f64 = 6.862943974709396;

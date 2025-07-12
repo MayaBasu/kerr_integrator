@@ -18,7 +18,6 @@ pub fn w_3(r:f64, theta:f64)-> [f64;4] {
     [A*s,0.0,0.0,-(r*r+A*A)*s]
 
 }  //con
-
 pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64) ->[f64;4] {
     let sigma = sigma(r,theta);
     let delta = delta(r);

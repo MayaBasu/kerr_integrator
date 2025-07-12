@@ -19,8 +19,8 @@ pub fn find_shortest_distance(graph:Graph,stream:Stream){
 
         let r = radial_graph[index_1][1];
         let theta = theta_graph[index_1][1];
-        let r_dot = r_derivative_propertime(r, theta);
-        let theta_dot = theta_derivative(r,theta);
+        let r_dot = r_derivative_propertime(r, theta,true);
+        let theta_dot = theta_derivative(r,theta,true);
 
         let lambda_2 = lambda_2(r,theta,r_dot,theta_dot);
 

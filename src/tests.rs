@@ -4,7 +4,7 @@ use crate::tetrads::{lambda_2, w_0,w_1,w_2,w_3};
 use crate::functions::{delta,sigma};
 use crate::constants::{A};
 
-pub fn test_tetrads(graph:Graph, testpointindex:u32){
+pub fn test_tetrads(graph:Graph, testpointindex:usize){
     let radial_graph = graph.radial.clone();
     let theta_graph = graph.theta.clone();
 
@@ -27,7 +27,6 @@ pub fn test_tetrads(graph:Graph, testpointindex:u32){
 
 
 }
-
 pub fn test_derivatives(graph:Graph){
     let radial_graph = graph.radial.clone();
     let theta_graph = graph.theta.clone();
