@@ -1,30 +1,15 @@
 use serde::{Serialize};
 use std::fs::File;
 use std::io::Write;
+use std::error::Error;
+use std::usize;
+use itertools::Itertools;
+use crate::derivatives::{r_derivative_propertime, theta_derivative};
+use crate::functions::{mino_to_bl_time, radial_roots};
+use crate::numeric_integrators::{ integrate_H, integrate_geodesic};
+use crate::star_initialization::initialize_star_chunks;
+use crate::tetrads::lambda_2;
 
-use crate::functions::{find_radial_parameters, find_theta_parameters,mino_to_bl_time};
-use crate::numeric_integrators::{integrate_theta, integrate_r, integrate_phi, integrate_H, integrate_t};
-use crate::tests::test_tetrads;
-
-#[derive(Serialize)]
-pub struct Graph {
-    pub(crate) radial: Vec<[f64;2]>,
-    pub(crate) theta: Vec<[f64;2]>,
-    pub(crate) phi: Vec<[f64;2]>,
-    pub(crate) t: Vec<[f64;2]>,
-    pub(crate) self_intersections: Vec<(usize,usize)>,
-    pub(crate) h: Vec<[f64;2]>
-}
-
-
-#[derive(Serialize)]
-pub struct StarChunk {
-    pub(crate) binding_energy: f64,
-    pub(crate) z_angular_momentum: f64,
-    pub(crate) carter_constant: f64,
-    pub(crate) phi: Vec<[f64;2]>,
-
-}
 #[derive(Clone, Copy, Debug)]
 pub struct RadialParams{
     pub p:f64,
@@ -39,131 +24,124 @@ pub struct ThetaParams{
     pub z_minus:f64,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy,Serialize)]
 pub struct StellarParams{
     pub(crate) lz:f64,
     pub(crate) c:f64,
     pub(crate) e:f64
 }
-
 impl StellarParams{
     pub fn new(lz:f64,e:f64, c:f64) -> Self{
         Self{e,lz,c}
     }
 }
-impl StarChunk {
-    pub fn new(lz:f64,e:f64, c:f64) -> Self {
-        let radial_params = find_radial_parameters(lz, e, c);
-        let theta_params = find_theta_parameters(lz, e, c); //9979
-        let (radial_graph,armpositions) = integrate_r( 9979.0, 2.37896861,4.315260870513532, radial_params);
 
-        println!("z minus is {}, and initial theta is then {:?}", theta_params.z_minus, theta_params.z_minus.sqrt().acos());
-        let theta_graph = integrate_theta(theta_params.z_minus.sqrt().acos()+0.01, theta_params); //theta_params.z_minus.sqrt().acos()+0.01
-        println!("theta initial is {:?}",theta_graph[0]); //theta_params.z_minus.sqrt().acos()+0.01
-        let t_graph  = integrate_t(radial_graph.clone(),theta_graph.clone(),lz,e);
-        let phi_graph = integrate_phi(radial_graph.clone(),theta_graph.clone(),lz,e);
-        let phi_by_t = mino_to_bl_time(t_graph,phi_graph);
+#[derive(Serialize,Clone)]
+pub struct GeodesicGraph {
+    pub(crate) stellar_params: StellarParams,
 
-        Self{
-            binding_energy:e,
-            z_angular_momentum:lz,
-            carter_constant:c,
-            phi:phi_by_t
-        }
+    pub(crate) radial_graph: Vec<[f64;2]>,
+    pub(crate) theta_graph: Vec<[f64;2]>,
+    pub(crate) phi_graph: Vec<[f64;2]>,
+    pub(crate) t_graph: Vec<[f64;2]>,
 
-    }
+    pub(crate) stream_height: Vec<[f64;2]>,
+    pub(crate) possible_self_intersections: Vec<(usize,usize)>,
+    pub(crate) distance_at_possible_self_intersections: Vec<(usize,usize,f64)>,
+    pub(crate) intersections: Vec<(usize,usize,bool)>,
 
+    pub(crate) bl_t_of_first_intersection: (f64,f64),
 }
-impl Graph {
-    pub fn new(stellar_params: StellarParams,r_initial:f64,theta_initial:f64) -> Self {
 
+impl GeodesicGraph {
+    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64) -> Self {
         println!("Initializing a new Graph with: \n\
          (e,lz,c) = {:?} \n\
-         (r_0,theta_0) = ({},{})",
-                 stellar_params,r_initial,theta_initial);
+         (r_0,theta_0) = ({},{}) \n\
+         It has radial roots at {:?}",
+                 stellar_params, r_initial, theta_initial, radial_roots(stellar_params));
 
-        let radial_graph = integrate_r( r_initial, stellar_params);
-        let theta_graph = integrate_theta(theta_initial, stellar_params); //theta_params.z_minus.sqrt().acos()+0.01
-        let phi_graph = integrate_phi(radial_graph.clone(), theta_graph.clone(), stellar_params);
-        let t_graph  = integrate_t(radial_graph.clone(),theta_graph.clone(),stellar_params);
-        let mut intersection_points = Vec::new();
-        let mut stream_width = Vec::new();
+        let (radial_graph, theta_graph, t_graph, phi_graph) = integrate_geodesic(r_initial, theta_initial, stellar_params);
 
-        Self{
-            radial: radial_graph,
-            theta: theta_graph,
-            phi: phi_graph,
-            t: t_graph,
-            self_intersections:intersection_points,
-            stream
+        let mut possible_self_intersections = Vec::new();
+        let mut stream_height = Vec::new();
+        let mut distance_at_possible_self_intersections = Vec::new();
+        let mut intersections = Vec::new();
+
+        Self {
+            radial_graph,
+            theta_graph,
+            phi_graph,
+            t_graph,
+            possible_self_intersections,
+            stream_height,
+            stellar_params,
+            distance_at_possible_self_intersections,
+            intersections,
+            bl_t_of_first_intersection: (0.0,0.0),
         }
     }
-    pub fn serialize_trajectory(&self, file_path: String) {
+    pub fn serialize(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         let graph_json = serde_json::to_string(&self)?;
         let mut file = File::create(file_path)?;
         file.write_all(graph_json.as_bytes())?;
+        Ok(())
     }
-
-
-
-    pub fn find_possible_self_intersection_points(mut self) ->Graph{
-
-        for primary_interval_start_index in 0..self.radial.len()-1 {
+    pub fn calculate_stream_width(&mut self, h_initial: f64, h_dot_initial: f64) {
+        self.stream_height = integrate_H(&self, h_dot_initial, h_initial, self.stellar_params)
+    }
+    pub fn find_possible_self_intersection_points(mut self) -> GeodesicGraph {
+        for primary_interval_start_index in 0..self.radial_graph.len() - 1 {
             for secondary_interval_start_index in 0..primary_interval_start_index {
-                let (A_phi,B_phi,A_r,B_r) = if self.radial[primary_interval_start_index][1] < self.radial[primary_interval_start_index+1][1]{
-                   // println!("going up");
-                    (self.phi[primary_interval_start_index][1],
-                    self.phi[primary_interval_start_index+1][1],
-                    self.radial[primary_interval_start_index][1]*self.theta[primary_interval_start_index][1].sin(),
-                    self.radial[primary_interval_start_index+1][1]*self.theta[primary_interval_start_index+1][1].sin())
-
-
-                }else{
-                  //  println!("goingdown");
-                    (self.phi[primary_interval_start_index+1][1],
-                     self.phi[primary_interval_start_index][1],
-                     self.radial[primary_interval_start_index+1][1]*self.theta[primary_interval_start_index+1][1].sin(),
-                     self.radial[primary_interval_start_index][1]*self.theta[primary_interval_start_index][1].sin())
+                let (a_phi, b_phi, a_r, b_r) = if self.radial_graph[primary_interval_start_index][1] < self.radial_graph[primary_interval_start_index + 1][1] {
+                    // println!("going up");
+                    (self.phi_graph[primary_interval_start_index][1],
+                     self.phi_graph[primary_interval_start_index + 1][1],
+                     self.radial_graph[primary_interval_start_index][1] * self.theta_graph[primary_interval_start_index][1].sin(),
+                     self.radial_graph[primary_interval_start_index + 1][1] * self.theta_graph[primary_interval_start_index + 1][1].sin())
+                } else {
+                    //  println!("goingdown");
+                    (self.phi_graph[primary_interval_start_index + 1][1],
+                     self.phi_graph[primary_interval_start_index][1],
+                     self.radial_graph[primary_interval_start_index + 1][1] * self.theta_graph[primary_interval_start_index + 1][1].sin(),
+                     self.radial_graph[primary_interval_start_index][1] * self.theta_graph[primary_interval_start_index][1].sin())
                 };
 
-                let (C_phi,D_phi,C_r,D_r) = if self.radial[secondary_interval_start_index][1] < self.radial[secondary_interval_start_index+1][1]{
-                    (self.phi[secondary_interval_start_index][1],
-                    self.phi[secondary_interval_start_index+1][1],
-                    self.radial[secondary_interval_start_index][1]*self.theta[secondary_interval_start_index][1].sin(),
-                    self.radial[secondary_interval_start_index+1][1]*self.theta[secondary_interval_start_index+1][1].sin())
-                }else{
-                    (self.phi[secondary_interval_start_index+1][1],
-                     self.phi[secondary_interval_start_index][1],
-                     self.radial[secondary_interval_start_index+1][1]*self.theta[secondary_interval_start_index+1][1].sin(),
-                     self.radial[secondary_interval_start_index][1]*self.theta[secondary_interval_start_index][1].sin())
+                let (c_phi, d_phi, c_r, d_r) = if self.radial_graph[secondary_interval_start_index][1] < self.radial_graph[secondary_interval_start_index + 1][1] {
+                    (self.phi_graph[secondary_interval_start_index][1],
+                     self.phi_graph[secondary_interval_start_index + 1][1],
+                     self.radial_graph[secondary_interval_start_index][1] * self.theta_graph[secondary_interval_start_index][1].sin(),
+                     self.radial_graph[secondary_interval_start_index + 1][1] * self.theta_graph[secondary_interval_start_index + 1][1].sin())
+                } else {
+                    (self.phi_graph[secondary_interval_start_index + 1][1],
+                     self.phi_graph[secondary_interval_start_index][1],
+                     self.radial_graph[secondary_interval_start_index + 1][1] * self.theta_graph[secondary_interval_start_index + 1][1].sin(),
+                     self.radial_graph[secondary_interval_start_index][1] * self.theta_graph[secondary_interval_start_index][1].sin())
                 };
 
-                let A_phi = A_phi%(2.0* std::f64::consts::PI);
-                let B_phi = B_phi%(2.0* std::f64::consts::PI);
-                let C_phi = C_phi%(2.0* std::f64::consts::PI);
-                let D_phi = D_phi%(2.0* std::f64::consts::PI);
+                let a_phi = a_phi % (2.0 * std::f64::consts::PI);
+                let b_phi = b_phi % (2.0 * std::f64::consts::PI);
+                let c_phi = c_phi % (2.0 * std::f64::consts::PI);
+                let d_phi = d_phi % (2.0 * std::f64::consts::PI);
 
-                let delta_phi_1 =A_phi-C_phi;
-                let delta_phi_2 = B_phi-D_phi;
+                let delta_phi_1 = a_phi - c_phi;
+                let delta_phi_2 = b_phi - d_phi;
 
-                let delta_r_1 = A_r-D_r;
-                let delta_r_2 = B_r-C_r;
-               // println!("{}",delta_phi_1 * delta_phi_2);
+                let delta_r_1 = a_r - d_r;
+                let delta_r_2 = b_r - c_r;
+                // println!("{}",delta_phi_1 * delta_phi_2);
 
-                if (delta_phi_1 * delta_phi_2 < 0.0)  && (delta_r_2*delta_r_1<0.0) && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0) { // && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0)
-                    println!("{}   {}",delta_phi_1 , delta_phi_2);
-                    self.self_intersections.push((primary_interval_start_index,secondary_interval_start_index));
-
-
-
+                if (delta_phi_1 * delta_phi_2 < 0.0) && (delta_r_2 * delta_r_1 < 0.0) && (delta_r_2 * delta_r_1 > -1.0) && (delta_phi_1 * delta_phi_2 > -1.0) { // && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0)
+                    println!("{}   {}", delta_phi_1, delta_phi_2);
+                    self.possible_self_intersections.push((primary_interval_start_index, secondary_interval_start_index));
                 }
             }
         }
 
 
-            //code to search through each arm position end point, and, for each index less than this, I want to compute the deltas of adjacent points
+        //code to search through each arm position end point, and, for each index less than this, I want to compute the deltas of adjacent points
 
-            /*
+        /*
         for arm_end_position_index in 0..armpositions.len()-1{
             let arm_start = armpositions[arm_end_position_index];
             let arm_end = armpositions[arm_end_position_index+1];
@@ -183,11 +161,92 @@ impl Graph {
 
   */
 
-            println!("the intersection points are at {:?}", self.self_intersections);
-            self
+        self
+    }
+    pub fn find_shortest_distance(mut self) {
+        for intersection_point in self.possible_self_intersections {
+            let index_1 = intersection_point.0;
+            let index_2 = intersection_point.1;
 
-         }
+            let coordinate_difference = [
+                0.0,
+                self.radial_graph[index_1][1] - self.radial_graph[index_2][1],
+                self.theta_graph[index_1][1] - self.theta_graph[index_2][1],
+                self.phi_graph[index_1][1] - self.phi_graph[index_2][1]];
+
+            let r = self.radial_graph[index_1][1];
+            let theta = self.theta_graph[index_1][1];
+            let r_dot = r_derivative_propertime(r, theta, true, self.stellar_params);
+            let theta_dot = theta_derivative(r, theta, true, self.stellar_params);
+
+            let lambda_2 = lambda_2(r, theta, r_dot, theta_dot, self.stellar_params);
+
+            //take the dot product:
+            let mut dot_product = 0.0;
+
+            for i in 0..4 {
+                dot_product = dot_product + lambda_2[i] * coordinate_difference[i]
+            }
+            self.distance_at_possible_self_intersections.push((index_1,index_2,dot_product))
+        }
+    }
+
+    pub fn find_intersections(mut self) {
+        let mut intersections = Vec::new();
+
+        for i in 0..self.distance_at_possible_self_intersections.len(){
+            let (index_1,index_2,dot_product) = self.distance_at_possible_self_intersections[i];
+
+            if (self.stream_height[index_1][1]+self.stream_height[index_2][1])/(2.0) > dot_product{
+                intersections.push((index_1,index_2,true));
+            }
+            else{
+                intersections.push((index_1,index_2,false));
+            }
+
+        }
+        self.intersections = intersections;
+    }
+
+    pub fn return_phi_at_t(self, global_time: f64) -> (usize,[f64;2]){
+        assert!(self.t_graph.last().unwrap()[1] > global_time);
+
+        let mut past_difference = (self.t_graph[0][1] - global_time).abs();
+
+        for i in 1..self.t_graph.len() {
+            let current_difference = (self.t_graph[i][1] - global_time).abs();
+
+            if past_difference < current_difference {
+                let best_index = i - 1;
+                return (best_index,self.phi_graph[best_index])
+            } else {
+                past_difference = current_difference;
+            }
+        }
+        panic!("Didn't find a closest match")
+    }
 }
+pub struct StarChunk {
+    pub(crate) geodesic_graph: GeodesicGraph,
+    pub(crate) fraction_of_star: f64,
+    pub(crate) binding_energy: f64,
+}
+
+pub struct Star {
+    star_chunks: Vec<StarChunk>,
+    stellar_params: StellarParams,
+    r_initial:f64,
+    theta_initial:f64,
+}
+
+impl Star {
+    pub fn new(self, stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64)-> Self{
+        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial);
+        Self{star_chunks,stellar_params,r_initial,theta_initial}
+    }
+}
+
+
 
 
 

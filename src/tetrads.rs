@@ -1,5 +1,6 @@
-use crate::constants::{A, C, E, LZ};
+use crate::A;
 use crate::functions::{delta, sigma};
+use crate::structs::StellarParams;
 
 pub fn w_0(r:f64, theta:f64) -> [f64;4]{
     let s = (delta(r)/sigma(r,theta)).sqrt();
@@ -18,14 +19,17 @@ pub fn w_3(r:f64, theta:f64)-> [f64;4] {
     [A*s,0.0,0.0,-(r*r+A*A)*s]
 
 }  //con
-pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64) ->[f64;4] {
+pub fn lambda_2(r:f64, theta:f64,r_dot:f64,theta_dot:f64,stellar_params: StellarParams) ->[f64;4] {
+    let e = stellar_params.e;
+    let lz = stellar_params.lz;
+    let c = stellar_params.c;
     let sigma = sigma(r,theta);
     let delta = delta(r);
 
-    let lambda_2_0 = (sigma/(C*delta)).sqrt()*A*theta.cos()*r_dot;
-    let lambda_2_1 = (1.0/(C*sigma*delta)).sqrt()*A*theta.cos()*(E*(r*r+A*A)-A*LZ);
-    let lambda_2_2 = -(1.0/(C*sigma)).sqrt()*r*(A*E*theta.sin()-LZ/theta.sin());
-    let lambda_2_3 = (sigma/C).sqrt()*r*theta_dot;
+    let lambda_2_0 = (sigma/(c*delta)).sqrt()*A*theta.cos()*r_dot;
+    let lambda_2_1 = (1.0/(c*sigma*delta)).sqrt()*A*theta.cos()*(e*(r*r+A*A)-A*lz);
+    let lambda_2_2 = -(1.0/(c*sigma)).sqrt()*r*(A*e*theta.sin()-lz/theta.sin());
+    let lambda_2_3 = (sigma/c).sqrt()*r*theta_dot;
 
     println!("lambda_2_0: {lambda_2_0}
     \n lambda_2_1: {lambda_2_1}

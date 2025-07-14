@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import math as m
 import json
 
-time = np.linspace(0, 4, 200000)
-orbit = kg.StableOrbit.from_constants(0.999, 0.87, 1.9, 1.26)
+time = np.linspace(0, 4, 2000000)
+orbit = kg.StableOrbit.from_constants(0.9, 0.9999, 0.5*6.5, 6.5*6.5*(1.0-0.5*0.5))
 print("a p e x")
-print(kg.apex_from_constants(0.999, 0.87, 1.9, 1.26))
+
 t_kg, r_kg, theta_kg, phi_kg = orbit.trajectory()
 
 print('a   E   Lz    Q')
@@ -26,7 +26,7 @@ for index in range(0,200000):
             initial_index = index
             found = True
 
-
+print(r_kg(0),theta_kg(0))
 #time = np.linspace(4*initial_index/200000, 4, 200000)
 
 print("THe INTDEX IS " + str(initial_index))
@@ -50,18 +50,17 @@ axs[0, 3].plot(time, t_kg(time))
 axs[0, 3].set_xlabel("$\lambda$")
 axs[0, 3].set_ylabel(r"$t(\lambda)$")
 
-with open('../ballistic_graph.json', 'r') as file:
+with open('../maingraph.txt', 'r') as file:
     ballistic_data = json.load(file)
 
-with open('../stream_width.json', 'r') as file:
-    stream_data = json.load(file)["h"]
 
+phi_graph = ballistic_data["phi_graph"]
+theta_graph = ballistic_data["theta_graph"]
+radial_graph = ballistic_data["radial_graph"]
+t_graph = ballistic_data["t_graph"]
+intersection_points = ballistic_data["possible_self_intersections"]
+stream_data = ballistic_data["stream_height"]
 
-phi_graph = ballistic_data["phi"]
-theta_graph = ballistic_data["theta"]
-radial_graph = ballistic_data["radial"]
-t_graph = ballistic_data["t"]
-intersection_points = ballistic_data["self_intersections"]
 
 
 phi_values = []
@@ -138,16 +137,28 @@ initial_index = 0
 for i in range(len(x_axis)):
 
     r_kg_value = r_kg(x_axis[i]+4*initial_index/200000)
-    r_ratio.append(radial_graph[i][1]/(r_kg_value))
+    if r_kg_value > 0.00001:
+        r_ratio.append(radial_graph[i][1]/(r_kg_value))
+    else:
+        print("avoided divide by zero")
+        r_ratio.append(1)
 
     theta_kg_value = theta_kg(x_axis[i] + 4 * initial_index / 200000)
     theta_ratio.append(theta_graph[i][1]/(theta_kg_value))
 
     phi_kg_value = phi_kg(x_axis[i] + 4 * initial_index / 200000)
-    phi_ratio.append(phi_graph[i][1]/(phi_kg_value))
+    if phi_kg_value > 0.00001:
+        phi_ratio.append(phi_graph[i][1]/(phi_kg_value))
+    else:
+        phi_ratio.append(1)
+        print("avoided divide by zero")
 
     t_kg_value = t_kg(x_axis[i])
-    t_ratio.append(t_graph[i][1]/t_kg_value)
+    if t_kg_value > 0.00001:
+        t_ratio.append(t_graph[i][1]/t_kg_value)
+    else:
+        print("avoided divide by zero")
+        t_ratio.append(1.0)
 
 
 #print(theta_ratio)

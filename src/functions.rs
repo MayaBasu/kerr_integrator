@@ -1,10 +1,9 @@
 #![allow(non_snake_case)]
-use roots::{find_roots_quartic, Roots, find_roots_quadratic};
-use crate::constants::{A, C, E, LZ, M};
+use crate::{M,A};
 use crate::numeric_integrators::NUM_STEPS;
+use roots::{find_roots_quartic, Roots, find_roots_quadratic};
 use crate::structs::{RadialParams, StellarParams, ThetaParams};
 
-//Hellsing, Integra et al (2006)
 pub(crate) fn find_radial_parameters(stellar_params: StellarParams) ->  RadialParams{
     //This function finds the parameters p,e,p3,p4 from the appendex of https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
     //using the roots of the radial polynomial - this is to shift from E,Lx,C which determine the radial polynomial, to this other parameterization.
@@ -71,11 +70,11 @@ pub fn radial_coefficients(stellar_params: StellarParams) ->[f64;5]{
 
     [a0,a1,a2,a3,a4]
 } //clean
-fn quadratic_root_finder(coeffs:[f64;3]) -> [f64; 2] {
+fn quadratic_root_finder(coefficients:[f64;3]) -> [f64; 2] {
     //this function takes in coefficients of a quadratic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
 
-    match find_roots_quadratic(coeffs[2], coeffs[1], coeffs[0]) {
+    match find_roots_quadratic(coefficients[2], coefficients[1], coefficients[0]) {
         Roots::Two(roots) =>{
             println!("succesfully found two roots: {:?}", roots);
             roots
@@ -85,15 +84,14 @@ fn quadratic_root_finder(coeffs:[f64;3]) -> [f64; 2] {
         }
     }
 }
-
 pub fn radial_roots(stellar_params: StellarParams) -> [f64; 4] {
     quartic_root_finder(radial_coefficients(stellar_params))
 }
-fn quartic_root_finder(coeffs:[f64;5]) -> [f64; 4] {
+fn quartic_root_finder(coefficients:[f64;5]) -> [f64; 4] {
     //this function takes in coefficients of a quartic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
-    println!("THE COEFFICIENTS ARE {:?}", coeffs);
-    match find_roots_quartic(coeffs[4], coeffs[3], coeffs[2], coeffs[1], coeffs[0]) {
+    println!("THE COEFFICIENTS ARE {:?}", coefficients);
+    match find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]) {
         Roots::Four(roots) =>{
             println!("succesfully found four roots: {:?}", roots);
             roots
@@ -120,7 +118,6 @@ pub fn sigma(r:f64, theta:f64) -> f64{
     r.powi(2) + A.powi(2)*(theta.cos()).powi(2)
 
 }
-
 pub fn K(stellar_params: StellarParams)->f64{  //Batra paper
     let lz = stellar_params.lz;
     let c = stellar_params.c;
@@ -141,7 +138,6 @@ pub fn P(r:f64,stellar_params: StellarParams)->f64{
 
     e*(r*r+A*A)-A*lz
 }
-
 pub fn mino_to_bl_time(t_graph:Vec<[f64;2]>, mut other_graph: Vec<[f64;2]>)->Vec<[f64;2]>{
     //function to convert between one graph, such as phi, or r, or theta, in mino time, to a graph in boyer lindquist time
 

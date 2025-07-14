@@ -1,9 +1,10 @@
 use crate::derivatives::{r_derivative_propertime, theta_derivative};
-use crate::structs::Graph;
+use crate::structs::GeodesicGraph;
 use crate::tetrads::{lambda_2, w_0,w_1,w_2,w_3};
 use crate::functions::{delta,sigma};
-use crate::constants::{A};
+use crate::{A};
 
+/*
 pub fn test_tetrads(graph:Graph, testpointindex:usize){
     let radial_graph = graph.radial.clone();
     let theta_graph = graph.theta.clone();
@@ -45,3 +46,5 @@ pub fn test_derivatives(graph:Graph){
 
 
 }
+
+ */

@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
-use crate::constants::{A,M};
-use crate::functions::{delta, R, S, sigma, radial_coefficients, theta_coefficients};
-use crate::structs::{RadialParams, ThetaParams};
+use crate::{M,A};
+use crate::structs::{RadialParams, StellarParams, ThetaParams};
+use crate::functions::{delta, R, S, sigma, radial_coefficients, theta_coefficients, K};
+
 
 pub fn psi_derivative(psi:f64, params:RadialParams ,ee:f64) -> f64 {
     // calculate d\psi/d \lambda using A16 from https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
@@ -37,8 +38,8 @@ pub fn phi_derivative(r:f64,theta:f64, lz:f64, e:f64) -> f64{
     )
     -A*A*lz/(delta(r))
 }  //con
-pub fn r_derivative_propertime(r:f64, theta:f64,negative:bool) -> f64{
-    let [a0,a1,a2,a3,a4] = radial_coefficients(LZ, E, C);
+pub fn r_derivative_propertime(r:f64, theta:f64,negative:bool,stellar_params: StellarParams) -> f64{
+    let [a0,a1,a2,a3,a4] = radial_coefficients(stellar_params);
  //from https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
     let sign = if negative{-1.0} else {1.0};
     (
@@ -50,15 +51,17 @@ pub fn r_derivative_propertime(r:f64, theta:f64,negative:bool) -> f64{
     ).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
 
 } //con
-pub fn theta_derivative(r:f64,theta:f64, negative:bool)->f64{ //con
+pub fn theta_derivative(r:f64,theta:f64, negative:bool,stellar_params: StellarParams)->f64{ //con
     //from https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
-    let [a0,a1,a2] = theta_coefficients(LZ,E,C);
+    let [a0,a1,a2] = theta_coefficients(stellar_params);
     let z = theta.cos().powi(2);
     let sign = if negative{-1.0} else {1.0};
-    ((a2*z*z + a1*z + a0)*(A*A*(1.0-E*E))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
+    ((a2*z*z + a1*z + a0)*(A*A*(1.0-stellar_params.e*stellar_params.e))/(1.0-z)).sqrt()/(r*r+A*A*theta.cos().powi(2))*sign
 
 } //con
-pub fn t_derivative(r:f64,theta:f64,lz:f64,e:f64)->f64{
+pub fn t_derivative(r:f64,theta:f64,stellar_params: StellarParams)->f64{
+    let e = stellar_params.e;
+    let lz = stellar_params.lz;
     //derivative wrt mino time, https://journals.aps.org/prd/pdf/10.1103/PhysRevD.69.044015
     let first_term = e*((r.powi(2)+A.powi(2)).powi(2)/delta(r)
         -A.powi(2)*theta.sin().powi(2)
@@ -67,17 +70,17 @@ pub fn t_derivative(r:f64,theta:f64,lz:f64,e:f64)->f64{
         (r.powi(2)+A.powi(2))/delta(r));
     first_term+second_term
 } //con
-pub fn H_acceleration(r:f64,theta:f64, H:f64)->f64{
+pub fn H_acceleration(r:f64,theta:f64, H:f64,stellar_params: StellarParams)->f64{
     let sigma = sigma(r,theta);
-    let R = R(theta);
-    let S = S(r);
+    let R = R(theta,stellar_params);
+    let S = S(r,stellar_params);
     //Equation 8 from ``General relativistic stream crossing in tidal disruption events"
     -H*(
         (r/(sigma.powi(3)))*
             (r.powi(2)-3.0*A*A*theta.cos().powi(2))*
             (1.0+
                 3.0*(r.powi(2)*R.powi(2)-A.powi(2)*(theta.cos()).powi(2)*S.powi(2))/
-                    (K*sigma.powi(2)))
+                    (K(stellar_params)*sigma.powi(2)))
     )
 
 } // ?
