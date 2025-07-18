@@ -2,10 +2,8 @@ use serde::{Serialize};
 use std::fs::File;
 use std::io::Write;
 use std::error::Error;
-use std::usize;
-use itertools::Itertools;
 use crate::derivatives::{r_derivative_propertime, theta_derivative};
-use crate::functions::{mino_to_bl_time, radial_roots};
+use crate::functions::{ radial_roots};
 use crate::numeric_integrators::{ integrate_H, integrate_geodesic};
 use crate::star_initialization::initialize_star_chunks;
 use crate::tetrads::lambda_2;
@@ -23,18 +21,13 @@ pub struct ThetaParams{
     pub z_plus:f64,
     pub z_minus:f64,
 }
-
 #[derive(Debug, Clone, Copy,Serialize)]
 pub struct StellarParams{
     pub(crate) lz:f64,
     pub(crate) c:f64,
     pub(crate) e:f64
 }
-impl StellarParams{
-    pub fn new(lz:f64,e:f64, c:f64) -> Self{
-        Self{e,lz,c}
-    }
-}
+
 
 #[derive(Serialize,Clone)]
 pub struct GeodesicGraph {
@@ -63,10 +56,10 @@ impl GeodesicGraph {
 
         let (radial_graph, theta_graph, t_graph, phi_graph) = integrate_geodesic(r_initial, theta_initial, stellar_params);
 
-        let mut possible_self_intersections = Vec::new();
-        let mut stream_height = Vec::new();
-        let mut distance_at_possible_self_intersections = Vec::new();
-        let mut intersections = Vec::new();
+        let possible_self_intersections = Vec::new();
+        let stream_height = Vec::new();
+        let distance_at_possible_self_intersections = Vec::new();
+        let intersections = Vec::new();
 
         Self {
             radial_graph,
@@ -190,7 +183,6 @@ impl GeodesicGraph {
             self.distance_at_possible_self_intersections.push((index_1,index_2,dot_product))
         }
     }
-
     pub fn find_intersections(mut self) {
         let mut intersections = Vec::new();
 
@@ -207,7 +199,6 @@ impl GeodesicGraph {
         }
         self.intersections = intersections;
     }
-
     pub fn return_phi_at_t(self, global_time: f64) -> (usize,[f64;2]){
         assert!(self.t_graph.last().unwrap()[1] > global_time);
 
@@ -226,25 +217,59 @@ impl GeodesicGraph {
         panic!("Didn't find a closest match")
     }
 }
+#[derive(Serialize,Clone)]
 pub struct StarChunk {
     pub(crate) geodesic_graph: GeodesicGraph,
     pub(crate) fraction_of_star: f64,
     pub(crate) binding_energy: f64,
 }
-
+#[derive(Serialize,Clone)]
 pub struct Star {
     star_chunks: Vec<StarChunk>,
     stellar_params: StellarParams,
     r_initial:f64,
     theta_initial:f64,
+    weighted_phi_values:Vec<((usize, [f64; 2]), f64)>
+}
+impl Star{
+    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64)-> Self{
+        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial);
+        let weighted_phi_values = Vec::new();
+        Self{star_chunks,stellar_params,r_initial,theta_initial,weighted_phi_values}
+    }
+    /*
+    pub fn weighted_phi_values(&mut self, t:f64)->Vec<((usize, [f64; 2]), f64)>{
+        let mut phi_values = Vec::new();
+        for star_chunk in self.star_chunks.clone(){
+            phi_values.push((star_chunk.geodesic_graph.return_phi_at_t(t),star_chunk.fraction_of_star));
+        }
+        self.weighted_phi_values = phi_values.clone();
+        phi_values
+    }
+    pub fn total_angular_momentum(&mut self, t:f64) ->(f64,f64){
+        let phi_values = Star::weighted_phi_values(self, t);
+        let mut total_angular_momentum = (0.0,0.0);
+        for phi_value in phi_values{
+            let (angle,weight) = phi_value;
+            let angle = angle.1[1];
+            total_angular_momentum = (total_angular_momentum.0 + (angle.cos())*weight,total_angular_momentum.1 + (angle.sin())*weight)
+        }
+        total_angular_momentum
+    }
+
+     */
+    pub fn serialize(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        let graph_json = serde_json::to_string(&self)?;
+        let mut file = File::create(file_path)?;
+        file.write_all(graph_json.as_bytes())?;
+        Ok(())
+    }
+
 }
 
-impl Star {
-    pub fn new(self, stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64)-> Self{
-        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial);
-        Self{star_chunks,stellar_params,r_initial,theta_initial}
-    }
-}
+
+
+
 
 
 

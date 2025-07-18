@@ -1,8 +1,11 @@
+/*
 use crate::derivatives::{r_derivative_propertime, theta_derivative};
 use crate::structs::GeodesicGraph;
 use crate::tetrads::{lambda_2, w_0,w_1,w_2,w_3};
 use crate::functions::{delta,sigma};
 use crate::{A};
+
+ */
 
 /*
 pub fn test_tetrads(graph:Graph, testpointindex:usize){

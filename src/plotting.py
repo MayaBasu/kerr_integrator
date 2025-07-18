@@ -34,6 +34,7 @@ print("with value "+str(r_kg(4*initial_index/200000)))
 print("the INITIAL THETA IS AT " + str(theta_kg(4 * initial_index / 200000)))
 fig, axs = plt.subplots(3, 4)
 
+fig.tight_layout()
 axs[0, 0].plot(time, r_kg(time))
 axs[0, 0].set_xlabel("$\lambda$")
 axs[0, 0].set_ylabel("$r(\lambda)$")
@@ -84,8 +85,7 @@ stream_x_axis = []
 
 
 
-three_d_fig = plt.figure(figsize=(6, 6))
-ax = plt.axes(projection='3d')
+
 
 
 
@@ -166,7 +166,7 @@ for i in range(len(x_axis)):
 
 
 #print(r_ratio)
-ax.plot3D(x3, y3, z3, 'blue')
+
 
 
 axs[1, 0].plot(x_axis, radial_values)
@@ -217,6 +217,13 @@ for i, intersection in enumerate(intersection_points):
 #axs[2,2].scatter(x3[382],y3[382])
 
 #plt.plot(stream_x_axis, r_ratio)
+
+three_d_fig = plt.figure(figsize=(6, 6))
+ax = plt.axes(projection='3d')
+ax.plot3D(x3, y3, z3, 'blue')
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("z")
 
 fig.tight_layout()
 plt.show()

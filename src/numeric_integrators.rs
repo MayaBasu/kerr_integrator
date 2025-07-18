@@ -21,13 +21,13 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
     let mut phi_graph= Vec::with_capacity(NUM_STEPS);
     let mut steps_since_flip = 0;
     let mut flipped = false;
-    for step in 0..14{
+    for step in 0..155{
         println!("{:?}",trajectory_graph.radial_graph[step][1]);
         phi_graph.push([trajectory_graph.radial_graph[step][1],h]);
 
     }
 
-    for step in 14..NUM_STEPS{
+    for step in 155..NUM_STEPS{
         steps_since_flip = steps_since_flip + 1;
         let d_tau = STEP_SIZE*(trajectory_graph.radial_graph[step][1].powi(2)+A*A*trajectory_graph.theta_graph[step][1].cos().powi(2));
         let velocity_increment = H_acceleration(trajectory_graph.radial_graph[step][1],

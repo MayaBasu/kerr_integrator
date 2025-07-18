@@ -1,5 +1,5 @@
 use crate::functions::find_theta_parameters;
-use crate::structs::{GeodesicGraph, StellarParams};
+use crate::structs::{GeodesicGraph, Star, StellarParams};
 mod functions;
 mod numeric_integrators;
 mod derivatives;
@@ -16,14 +16,22 @@ fn main() {
     let lz = 0.5*6.5;
     let c = 6.5*6.5*(1.0-0.5*0.5);
 
-    let main_stellar_params:StellarParams = StellarParams::new(lz,e,c);
-    let theta_params = find_theta_parameters(main_stellar_params);
+    let stellar_params:StellarParams = StellarParams::new(lz,e,c);
+    let theta_params = find_theta_parameters(stellar_params);
 
-    let mut graph = GeodesicGraph::new(main_stellar_params, 19.265297560836153, 0.5235996057125137); //theta_params.z_minus.sqrt().acos()+0.001
 
-    graph.calculate_stream_width(1.0,0.0);
+
+
+    let mut graph = GeodesicGraph::new(stellar_params, 19.265297560836153, 0.5235996057125137); //theta_params.z_minus.sqrt().acos()+0.001
+    graph.calculate_stream_width(0.7,0.0);
     graph.serialize("maingraph.txt").unwrap();
 
+
+
+
+    let star = Star::new(stellar_params, 19.265297560836153, 0.5235996057125137, 2.35);
+
+    star.serialize("star.json").unwrap()
 
 
 }
