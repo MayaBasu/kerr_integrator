@@ -20,9 +20,9 @@ print(" initial r is ")
 #trim r_kg
 initial_index = 0
 found = False
-for index in range(0,200000):
+for index in range(0,20):
     if not found:
-        if r_kg(4*index/200000)>3:
+        if r_kg(4*index/20)>3:
             initial_index = index
             found = True
 
@@ -59,7 +59,7 @@ phi_graph = ballistic_data["phi_graph"]
 theta_graph = ballistic_data["theta_graph"]
 radial_graph = ballistic_data["radial_graph"]
 t_graph = ballistic_data["t_graph"]
-intersection_points = ballistic_data["possible_self_intersections"]
+#intersection_points = ballistic_data["possible_self_intersections"]
 stream_data = ballistic_data["stream_height"]
 
 
@@ -91,10 +91,10 @@ stream_x_axis = []
 
 
 for i in range(len(radial_graph)):
-    r = radial_graph[i][1]
-    theta = theta_graph[i][1]
-    phi = phi_graph[i][1]
-    t = t_graph[i][1]
+    r = radial_graph[i]
+    theta = theta_graph[i]
+    phi = phi_graph[i]
+    t = t_graph[i]
 
     radial_values.append(r)
     theta_values.append(theta)
@@ -105,16 +105,16 @@ for i in range(len(radial_graph)):
     y3.append(r * m.sin(theta) * m.sin(phi))
     z3.append(r * m.cos(theta))
 
-    stream_height.append(stream_data[i][1])
+    stream_height.append(stream_data[i])
     stream_x_axis.append(r)
 
-    x_axis.append(radial_graph[i][0])
+    x_axis.append(radial_graph[i])
 
 initial_condition_index = 0
 initial_passage = False
 second_out = False
 found = False
-for index in range(0,40000):
+for index in range(0,40):
     if not found:
         if radial_values[index]<100:
             initial_passage = True
@@ -138,24 +138,24 @@ for i in range(len(x_axis)):
 
     r_kg_value = r_kg(x_axis[i]+4*initial_index/200000)
     if r_kg_value > 0.00001:
-        r_ratio.append(radial_graph[i][1]/(r_kg_value))
+        r_ratio.append(radial_graph[i]/(r_kg_value))
     else:
         print("avoided divide by zero")
         r_ratio.append(1)
 
     theta_kg_value = theta_kg(x_axis[i] + 4 * initial_index / 200000)
-    theta_ratio.append(theta_graph[i][1]/(theta_kg_value))
+    theta_ratio.append(theta_graph[i]/(theta_kg_value))
 
     phi_kg_value = phi_kg(x_axis[i] + 4 * initial_index / 200000)
     if phi_kg_value > 0.00001:
-        phi_ratio.append(phi_graph[i][1]/(phi_kg_value))
+        phi_ratio.append(phi_graph[i]/(phi_kg_value))
     else:
         phi_ratio.append(1)
         print("avoided divide by zero")
 
     t_kg_value = t_kg(x_axis[i])
     if t_kg_value > 0.00001:
-        t_ratio.append(t_graph[i][1]/t_kg_value)
+        t_ratio.append(t_graph[i]/t_kg_value)
     else:
         print("avoided divide by zero")
         t_ratio.append(1.0)
@@ -199,17 +199,17 @@ fig = plt.figure(figsize=(6, 6))
 azis = plt.axes()
 
 azis.plot(x3,y3)
-for i, intersection in enumerate(intersection_points):
+#for i, intersection in enumerate(intersection_points):
 
-    color = (0,1,i*(1/(len(intersection_points))))
-    azis.scatter(x3[intersection[0]],y3[intersection[0]], color = color)
-    azis.scatter(x3[intersection[0]+1],y3[intersection[0]+1], color = color)
+ #   color = (0,1,i*(1/(len(intersection_points))))
+ #   azis.scatter(x3[intersection[0]],y3[intersection[0]], color = color)
+ #   azis.scatter(x3[intersection[0]+1],y3[intersection[0]+1], color = color)
 
-    color = (1,0,i*(1/(len(intersection_points))))
+  #  color = (1,0,i*(1/(len(intersection_points))))
 
-    azis.scatter(x3[intersection[1]+1],y3[intersection[1]+1], color = color)
-    azis.scatter(x3[intersection[1]],y3[intersection[1]], color = color)
-
+  #  azis.scatter(x3[intersection[1]+1],y3[intersection[1]+1], color = color)
+  #  azis.scatter(x3[intersection[1]],y3[intersection[1]], color = color)
+#
 
 
 #axs[2,2].scatter(x3[481],y3[481])

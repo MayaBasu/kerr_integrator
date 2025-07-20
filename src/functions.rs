@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 use crate::{M,A};
-use crate::numeric_integrators::NUM_STEPS;
 use roots::{find_roots_quartic, Roots, find_roots_quadratic};
 use crate::structs::{RadialParams, StellarParams, ThetaParams};
 
@@ -140,15 +139,27 @@ pub fn P(r:f64,stellar_params: StellarParams)->f64{
 }
 pub fn mino_to_bl_time(t_graph:Vec<[f64;2]>, mut other_graph: Vec<[f64;2]>)->Vec<[f64;2]>{
     //function to convert between one graph, such as phi, or r, or theta, in mino time, to a graph in boyer lindquist time
-
-    for i in 0..NUM_STEPS{ //check that the mino time axis are the same for these graphs
-        assert_eq!(other_graph[i][0],t_graph[i][0]);
-    }
     for point in 0..other_graph.len(){
         other_graph[point][0] = t_graph[point][1]
     }
     other_graph
+}
+pub fn lower_distance_bound(delta_max:f64,sigma_min:f64,delta_r:f64,delta_theta:f64)->f64{
+    ((sigma_min/delta_max)*delta_r.powi(2)+ sigma_min*delta_theta.powi(2)).sqrt()
+}
 
+pub fn distance(first_coords:(f64,f64),second_coords:(f64,f64),num_divisions:i32) -> f64{
+    let delta_r = first_coords.0-second_coords.0;
+    let delta_theta = first_coords.1-second_coords.1;
+
+    let mut distance = 0.0;
+
+    for division in 0..num_divisions{
+        let r = first_coords.0+division as f64*(delta_r/num_divisions as f64);
+        let theta = first_coords.1+division as f64*(delta_theta/num_divisions as f64);
+        distance = distance + lower_distance_bound(delta(r),sigma(r,theta),delta_r,delta_theta);
+    }
+    distance
 }
 
 

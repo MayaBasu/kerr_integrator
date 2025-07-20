@@ -1,7 +1,7 @@
 use crate::structs::{GeodesicGraph, StellarParams,StarChunk};
 
 
-pub fn initialize_star_chunks(stellar_params: StellarParams, r_cm:f64, r_stellar:f64, num_slices:usize, theta_initial:f64) -> Vec<StarChunk>{
+pub fn initialize_star_chunks(stellar_params: StellarParams, r_cm:f64, r_stellar:f64, num_slices:usize, theta_initial:f64,num_steps:usize,step_size:f64) -> Vec<StarChunk>{
     //find the binding energy of slices of a star which is disrupted at a certain radius with the freezing approximation
     //in units of G = M = c = 1, the stellar radius is 0.47
     // so taylor expanding the newtonian potential we have delta e = GMr/r_cm^2 where r is how far out and r_cm is the radiout out fromhe center of mass
@@ -13,8 +13,8 @@ pub fn initialize_star_chunks(stellar_params: StellarParams, r_cm:f64, r_stellar
         let delta_binding_energy= r_out / (r_cm.powi(2));
         let binding_energy = stellar_params.e - delta_binding_energy;
         let fraction_of_star= fractional_stellar_slice_volume(r_out, delta_r, r_stellar);
-        let chunk_stellar_parameters = StellarParams::new(stellar_params.lz, binding_energy, stellar_params.c);
-        let chunk_geodesic_graph = GeodesicGraph::new(chunk_stellar_parameters,r_cm,theta_initial);
+        let chunk_stellar_parameters = StellarParams{lz:stellar_params.lz, e:binding_energy, c:stellar_params.c};
+        let chunk_geodesic_graph = GeodesicGraph::new(chunk_stellar_parameters,r_cm,theta_initial,num_steps,step_size);
 
         chunk_data.push(
             StarChunk {

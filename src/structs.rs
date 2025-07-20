@@ -2,11 +2,9 @@ use serde::{Serialize};
 use std::fs::File;
 use std::io::Write;
 use std::error::Error;
-use crate::derivatives::{r_derivative_propertime, theta_derivative};
-use crate::functions::{ radial_roots};
-use crate::numeric_integrators::{ integrate_H, integrate_geodesic};
+use crate::functions::{delta, distance, lower_distance_bound, radial_roots, sigma};
+use crate::numeric_integrators::{integrate_H, integrate_phi, integrate_r, integrate_t, integrate_theta};
 use crate::star_initialization::initialize_star_chunks;
-use crate::tetrads::lambda_2;
 
 #[derive(Clone, Copy, Debug)]
 pub struct RadialParams{
@@ -33,44 +31,49 @@ pub struct StellarParams{
 pub struct GeodesicGraph {
     pub(crate) stellar_params: StellarParams,
 
-    pub(crate) radial_graph: Vec<[f64;2]>,
-    pub(crate) theta_graph: Vec<[f64;2]>,
-    pub(crate) phi_graph: Vec<[f64;2]>,
-    pub(crate) t_graph: Vec<[f64;2]>,
+    pub(crate) num_steps: usize,
+    pub(crate) step_size: f64,
 
-    pub(crate) stream_height: Vec<[f64;2]>,
-    pub(crate) possible_self_intersections: Vec<(usize,usize)>,
-    pub(crate) distance_at_possible_self_intersections: Vec<(usize,usize,f64)>,
+    pub(crate) t_graph: Vec<f64>,
+    pub(crate) radial_graph: Vec<f64>,
+    pub(crate) theta_graph: Vec<f64>,
+    pub(crate) phi_graph: Vec<f64>,
+
+    pub(crate) stream_height: Vec<f64>,
+
     pub(crate) intersections: Vec<(usize,usize,bool)>,
-
     pub(crate) bl_t_of_first_intersection: (f64,f64),
 }
 
 impl GeodesicGraph {
-    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64) -> Self {
+    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64, num_steps:usize,step_size:f64) -> Self {
         println!("Initializing a new Graph with: \n\
          (e,lz,c) = {:?} \n\
          (r_0,theta_0) = ({},{}) \n\
-         It has radial roots at {:?}",
+         It has radial roots at {:?}\
+         \n Calculating trajectory for {num_steps} in Mino time spaced at {step_size}",
                  stellar_params, r_initial, theta_initial, radial_roots(stellar_params));
 
-        let (radial_graph, theta_graph, t_graph, phi_graph) = integrate_geodesic(r_initial, theta_initial, stellar_params);
-
-        let possible_self_intersections = Vec::new();
-        let stream_height = Vec::new();
-        let distance_at_possible_self_intersections = Vec::new();
-        let intersections = Vec::new();
+        let radial_graph = integrate_r(r_initial, stellar_params,num_steps,step_size).0;
+        let theta_graph = integrate_theta(theta_initial,stellar_params,num_steps,step_size).0;
+        let t_graph = integrate_t(radial_graph.clone(), theta_graph.clone(), stellar_params,num_steps,step_size);
+        let phi_graph = integrate_phi(radial_graph.clone(),theta_graph.clone(), stellar_params,num_steps,step_size);
+        println!(" phi values are {:?}",phi_graph);
 
         Self {
+            stellar_params,
+
+            num_steps,
+            step_size,
+
             radial_graph,
             theta_graph,
             phi_graph,
             t_graph,
-            possible_self_intersections,
-            stream_height,
-            stellar_params,
-            distance_at_possible_self_intersections,
-            intersections,
+
+            stream_height: Vec::new(),
+            intersections: Vec::new(),
+
             bl_t_of_first_intersection: (0.0,0.0),
         }
     }
@@ -81,131 +84,16 @@ impl GeodesicGraph {
         Ok(())
     }
     pub fn calculate_stream_width(&mut self, h_initial: f64, h_dot_initial: f64) {
-        self.stream_height = integrate_H(&self, h_dot_initial, h_initial, self.stellar_params)
+        self.stream_height = integrate_H(&self, h_dot_initial, h_initial, self.stellar_params,self.num_steps,self.step_size);
     }
-    pub fn find_possible_self_intersection_points(mut self) -> GeodesicGraph {
-        for primary_interval_start_index in 0..self.radial_graph.len() - 1 {
-            for secondary_interval_start_index in 0..primary_interval_start_index {
-                let (a_phi, b_phi, a_r, b_r) = if self.radial_graph[primary_interval_start_index][1] < self.radial_graph[primary_interval_start_index + 1][1] {
-                    // println!("going up");
-                    (self.phi_graph[primary_interval_start_index][1],
-                     self.phi_graph[primary_interval_start_index + 1][1],
-                     self.radial_graph[primary_interval_start_index][1] * self.theta_graph[primary_interval_start_index][1].sin(),
-                     self.radial_graph[primary_interval_start_index + 1][1] * self.theta_graph[primary_interval_start_index + 1][1].sin())
-                } else {
-                    //  println!("goingdown");
-                    (self.phi_graph[primary_interval_start_index + 1][1],
-                     self.phi_graph[primary_interval_start_index][1],
-                     self.radial_graph[primary_interval_start_index + 1][1] * self.theta_graph[primary_interval_start_index + 1][1].sin(),
-                     self.radial_graph[primary_interval_start_index][1] * self.theta_graph[primary_interval_start_index][1].sin())
-                };
 
-                let (c_phi, d_phi, c_r, d_r) = if self.radial_graph[secondary_interval_start_index][1] < self.radial_graph[secondary_interval_start_index + 1][1] {
-                    (self.phi_graph[secondary_interval_start_index][1],
-                     self.phi_graph[secondary_interval_start_index + 1][1],
-                     self.radial_graph[secondary_interval_start_index][1] * self.theta_graph[secondary_interval_start_index][1].sin(),
-                     self.radial_graph[secondary_interval_start_index + 1][1] * self.theta_graph[secondary_interval_start_index + 1][1].sin())
-                } else {
-                    (self.phi_graph[secondary_interval_start_index + 1][1],
-                     self.phi_graph[secondary_interval_start_index][1],
-                     self.radial_graph[secondary_interval_start_index + 1][1] * self.theta_graph[secondary_interval_start_index + 1][1].sin(),
-                     self.radial_graph[secondary_interval_start_index][1] * self.theta_graph[secondary_interval_start_index][1].sin())
-                };
+    pub fn return_phi_at_t(self, global_time: f64) -> (usize,f64){
+        assert!(self.t_graph.last().unwrap() > &global_time);
 
-                let a_phi = a_phi % (2.0 * std::f64::consts::PI);
-                let b_phi = b_phi % (2.0 * std::f64::consts::PI);
-                let c_phi = c_phi % (2.0 * std::f64::consts::PI);
-                let d_phi = d_phi % (2.0 * std::f64::consts::PI);
-
-                let delta_phi_1 = a_phi - c_phi;
-                let delta_phi_2 = b_phi - d_phi;
-
-                let delta_r_1 = a_r - d_r;
-                let delta_r_2 = b_r - c_r;
-                // println!("{}",delta_phi_1 * delta_phi_2);
-
-                if (delta_phi_1 * delta_phi_2 < 0.0) && (delta_r_2 * delta_r_1 < 0.0) && (delta_r_2 * delta_r_1 > -1.0) && (delta_phi_1 * delta_phi_2 > -1.0) { // && (delta_r_2*delta_r_1>-1.0) && (delta_phi_1 * delta_phi_2 > -1.0)
-                    println!("{}   {}", delta_phi_1, delta_phi_2);
-                    self.possible_self_intersections.push((primary_interval_start_index, secondary_interval_start_index));
-                }
-            }
-        }
-
-
-        //code to search through each arm position end point, and, for each index less than this, I want to compute the deltas of adjacent points
-
-        /*
-        for arm_end_position_index in 0..armpositions.len()-1{
-            let arm_start = armpositions[arm_end_position_index];
-            let arm_end = armpositions[arm_end_position_index+1];
-
-            for primary_interval_start_index in arm_start..arm_end{
-            for secondary_interval_start_index in 0..arm_start{
-                let delta_phi_1 = phi_graph[secondary_interval_start_index][1]-phi_graph[primary_interval_start_index][1];
-                let delta_phi_2 = phi_graph[secondary_interval_start_index+1][1]-phi_graph[primary_interval_start_index+1][1];
-                if delta_phi_1*delta_phi_2 < 0.0{
-                    intersection_points.push(primary_interval_start_index)
-                }
-
-
-        }
-            }
-        }
-
-  */
-
-        self
-    }
-    pub fn find_shortest_distance(mut self) {
-        for intersection_point in self.possible_self_intersections {
-            let index_1 = intersection_point.0;
-            let index_2 = intersection_point.1;
-
-            let coordinate_difference = [
-                0.0,
-                self.radial_graph[index_1][1] - self.radial_graph[index_2][1],
-                self.theta_graph[index_1][1] - self.theta_graph[index_2][1],
-                self.phi_graph[index_1][1] - self.phi_graph[index_2][1]];
-
-            let r = self.radial_graph[index_1][1];
-            let theta = self.theta_graph[index_1][1];
-            let r_dot = r_derivative_propertime(r, theta, true, self.stellar_params);
-            let theta_dot = theta_derivative(r, theta, true, self.stellar_params);
-
-            let lambda_2 = lambda_2(r, theta, r_dot, theta_dot, self.stellar_params);
-
-            //take the dot product:
-            let mut dot_product = 0.0;
-
-            for i in 0..4 {
-                dot_product = dot_product + lambda_2[i] * coordinate_difference[i]
-            }
-            self.distance_at_possible_self_intersections.push((index_1,index_2,dot_product))
-        }
-    }
-    pub fn find_intersections(mut self) {
-        let mut intersections = Vec::new();
-
-        for i in 0..self.distance_at_possible_self_intersections.len(){
-            let (index_1,index_2,dot_product) = self.distance_at_possible_self_intersections[i];
-
-            if (self.stream_height[index_1][1]+self.stream_height[index_2][1])/(2.0) > dot_product{
-                intersections.push((index_1,index_2,true));
-            }
-            else{
-                intersections.push((index_1,index_2,false));
-            }
-
-        }
-        self.intersections = intersections;
-    }
-    pub fn return_phi_at_t(self, global_time: f64) -> (usize,[f64;2]){
-        assert!(self.t_graph.last().unwrap()[1] > global_time);
-
-        let mut past_difference = (self.t_graph[0][1] - global_time).abs();
+        let mut past_difference = (self.t_graph[0] - global_time).abs();
 
         for i in 1..self.t_graph.len() {
-            let current_difference = (self.t_graph[i][1] - global_time).abs();
+            let current_difference = (self.t_graph[i] - global_time).abs();
 
             if past_difference < current_difference {
                 let best_index = i - 1;
@@ -216,7 +104,91 @@ impl GeodesicGraph {
         }
         panic!("Didn't find a closest match")
     }
+
+    pub fn find_self_intersections(mut self,num_phi_bins:usize){
+        let mut intersections = Vec::with_capacity(self.num_steps);
+        let binsize = 2.0*std::f64::consts::PI/num_phi_bins as f64;
+        let mut indices = Vec::new();
+        let mut wraps = Vec::new();
+        for bin_number in 0..num_phi_bins{
+            let mut points_bin = Vec::new();
+            let mut coords_bin = Vec::new();
+            for phi_index in 0..self.phi_graph.len(){
+                let remainder = self.phi_graph[phi_index] % (2.0*std::f64::consts::PI);
+                //println!("NDER {:?}   {:?}",self.phi_graph[phi_index],remainder);
+
+                let phi_value = remainder;
+                if (phi_value >= bin_number as f64*binsize) && (phi_value < (bin_number as f64+1.0)*binsize){
+                    let wrap = ((self.phi_graph[phi_index] -remainder)/(2.0*std::f64::consts::PI)).round() as i32;
+                    wraps.push(wrap);
+                    points_bin.push((phi_index,wrap));
+                    coords_bin.push((self.radial_graph[phi_index],self.theta_graph[phi_index]));
+                }
+            }
+            if coords_bin.len() > 1{
+                intersections.push(Self::test_for_intersection(coords_bin,points_bin.clone(),self.stream_height.clone()));
+            }
+
+            indices.push(points_bin)
+        }
+        print!(" PHI IS {:?}, wraphs are {:?}",self.phi_graph,wraps);
+        println!("indices are at {:?}",indices);
+        println!("intersections are at {:?}",intersections);
+
+
+    }
+
+    fn test_for_intersection(coords_bin:Vec<(f64,f64)>, points_bin:Vec<(usize,i32)>, stream_data:Vec<f64>) -> Vec<((usize,usize), bool, f64,f64,bool)> {
+        let mut intersections = Vec::new();
+        //(point one tested,point two tested), was there a collision?, how far away, stream width, was a more precise integration done,
+        let (mut sigma_min, mut delta_max)  = if points_bin.len() == 0{
+            panic!("Tried to find stream intersections between an empty set of points.")
+        }else{
+            (sigma(coords_bin[0].0,coords_bin[0].1),delta(coords_bin[0].0))
+        };
+
+        for point in 1..points_bin.len(){
+            let sigma = sigma(coords_bin[point].0,coords_bin[point].1);
+            let delta = delta(coords_bin[point].0);
+
+            if sigma <sigma_min{
+                sigma_min = sigma
+            }
+            if delta>delta_max{
+                delta_max = delta
+            }
+
+        }
+        println!("max out pf the points {:?} are delta is {delta_max} and sigma is {sigma_min}", coords_bin);
+        for point in 0..points_bin.len(){
+            for second_point in 0..point{
+                if points_bin[point].1 != points_bin[second_point].1{
+                    println!("{:?} and {:?}",points_bin[point].1,points_bin[second_point].1);
+                    let average_stream_width = (stream_data[point] + stream_data[second_point])/2.0;
+                    let delta_r = (coords_bin[point].0-coords_bin[second_point].0).abs();
+                    let delta_theta = (coords_bin[point].1-coords_bin[second_point].1).abs();
+                    let lower_distance_bound = lower_distance_bound(delta_max,sigma_min,delta_r,delta_theta);
+
+                    if lower_distance_bound > average_stream_width{
+                        intersections.push(((point,second_point),false,lower_distance_bound,average_stream_width,false));
+                    }else{
+                        let distance = distance(coords_bin[point],coords_bin[second_point],50);
+                        if distance > average_stream_width{
+                            intersections.push(((point,second_point),false,lower_distance_bound,average_stream_width,true));
+                        } else{
+                            intersections.push(((point,second_point),true,lower_distance_bound,average_stream_width,true));
+                        }
+                    }
+                }
+            }
+        }
+        intersections
+
+    }
 }
+
+
+
 #[derive(Serialize,Clone)]
 pub struct StarChunk {
     pub(crate) geodesic_graph: GeodesicGraph,
@@ -232,8 +204,8 @@ pub struct Star {
     weighted_phi_values:Vec<((usize, [f64; 2]), f64)>
 }
 impl Star{
-    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64)-> Self{
-        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial);
+    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64,num_steps:usize,step_size:f64)-> Self{
+        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial,num_steps,step_size);
         let weighted_phi_values = Vec::new();
         Self{star_chunks,stellar_params,r_initial,theta_initial,weighted_phi_values}
     }
