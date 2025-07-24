@@ -1,5 +1,6 @@
+use crate::derivatives::{r_derivative_propertime, theta_derivative};
 use crate::functions::find_theta_parameters;
-use crate::structs::{GeodesicGraph, Star, StellarParams};
+use crate::structs::{ StellarParams};
 mod functions;
 mod numeric_integrators;
 mod derivatives;
@@ -24,17 +25,28 @@ fn main() {
 
 
 
+
+
+
     let stellar_params:StellarParams = StellarParams {lz,e,c};
-    let theta_params = find_theta_parameters(stellar_params);
+
+    let r_deriv = theta_derivative(1000.0, 0.0,false,stellar_params);
+
+
+    println!("{:?}",r_deriv);
 
 
 
+
+/*
 
     let mut graph = GeodesicGraph::new(stellar_params, 19.265297560836153, 0.5235996057125137,NUM_STEPS,STEP_SIZE); //theta_params.z_minus.sqrt().acos()+0.001
     graph.calculate_stream_width(0.7,0.0);
     graph.serialize("maingraph.txt").unwrap();
 
     graph.find_self_intersections(1000);
+
+ */
 
 
 
