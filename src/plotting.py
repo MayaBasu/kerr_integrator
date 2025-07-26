@@ -20,11 +20,12 @@ print(" initial r is ")
 #trim r_kg
 initial_index = 0
 found = False
-for index in range(0,20):
-    if not found:
-        if r_kg(4*index/20)>3:
-            initial_index = index
-            found = True
+
+#for index in range(0,20):
+ #   if not found:
+  #      if r_kg(4*index/20)>3:
+    #        initial_index = index
+   #         found = True
 
 print(r_kg(0),theta_kg(0))
 #time = np.linspace(4*initial_index/200000, 4, 200000)
@@ -108,23 +109,13 @@ for i in range(len(radial_graph)):
     stream_height.append(stream_data[i])
     stream_x_axis.append(r)
 
-    x_axis.append(radial_graph[i])
+    x_axis.append(i*0.01)
 
 initial_condition_index = 0
 initial_passage = False
 second_out = False
 found = False
-for index in range(0,40):
-    if not found:
-        if radial_values[index]<100:
-            initial_passage = True
-        if initial_passage:
-            if radial_values[index]>9000:
-                second_out = True
-        if initial_passage & second_out:
-            if radial_values[index]<5000:
-                initial_condition_index = index
-                found = True
+
 
 print("THe INTDEX IS " + str(initial_condition_index))
 print("with value "+str(radial_values[initial_condition_index]))
@@ -168,7 +159,7 @@ for i in range(len(x_axis)):
 #print(r_ratio)
 
 
-
+print(theta_values)
 axs[1, 0].plot(x_axis, radial_values)
 plt.xlabel("$\lambda$")
 plt.ylabel("$r(\lambda)$")

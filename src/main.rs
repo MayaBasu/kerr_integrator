@@ -1,6 +1,6 @@
 use crate::derivatives::{r_derivative_propertime, theta_derivative};
 use crate::functions::find_theta_parameters;
-use crate::structs::{ StellarParams};
+use crate::structs::{GeodesicGraph, StellarParams};
 mod functions;
 mod numeric_integrators;
 mod derivatives;
@@ -14,14 +14,15 @@ pub const M: f64 = 1.0;
 pub const A: f64 = 0.9;
 
 
-const STEP_SIZE: f64 = 0.0001;
-const NUM_STEPS: usize = 400;
-
+const STEP_SIZE: f64 = 0.001;
+const NUM_STEPS: usize = 4000;
+const num_phi_bins: usize=100;
 fn main() {
 
     let e = 0.9999;
     let lz = 0.5*6.5;
     let c = 6.5*6.5*(1.0-0.5*0.5);
+
 
 
 
@@ -38,15 +39,15 @@ fn main() {
 
 
 
-/*
 
-    let mut graph = GeodesicGraph::new(stellar_params, 19.265297560836153, 0.5235996057125137,NUM_STEPS,STEP_SIZE); //theta_params.z_minus.sqrt().acos()+0.001
+
+    let mut graph = GeodesicGraph::new(stellar_params, 9950.0, 1.5235996057125137,NUM_STEPS,STEP_SIZE); //theta_params.z_minus.sqrt().acos()+0.001
     graph.calculate_stream_width(0.7,0.0);
-    graph.serialize("maingraph.txt").unwrap();
+    graph.clone().find_intersections();
+    graph.serialize("ballistic_graph.json").unwrap()
 
-    graph.find_self_intersections(1000);
 
- */
+
 
 
 

@@ -4,6 +4,7 @@ use std::io::Write;
 use std::error::Error;
 use serde_json::Value::Array;
 use crate::functions::{delta, distance, lower_distance_bound, radial_roots, sigma};
+use crate::num_phi_bins;
 use crate::numeric_integrators::{integrate_H, integrate_phi, integrate_r, integrate_t, integrate_theta};
 use crate::star_initialization::initialize_star_chunks;
 
@@ -30,6 +31,8 @@ pub struct StellarParams{
 }
 
 
+
+#[derive(Clone, Copy, Debug)]
 pub struct WrappedDataPoint {
     pub index:usize,
     pub wrap:usize,
@@ -118,93 +121,75 @@ impl GeodesicGraph {
         panic!("Didn't find a closest match")
     }
 
-    pub fn wrap_data(&self,num_phi_bins:usize)->Array<Vec<WrappedDataPoint>>{
-        let mut wrapped_data = Array::new();
-        for (index, phi) in self.phi_graph.iter().enumerate(){
+    pub fn wrap_data(self)->[Vec<WrappedDataPoint>;num_phi_bins]{
+        let mut wrapped_data =  [(); num_phi_bins].map(|_| Vec::new());
+        for (index, &phi) in self.phi_graph.iter().enumerate(){
             let remainder = phi % (2.0*std::f64::consts::PI);
-            let wrap = ((phi-remainder)/(2.0*std::f64::consts::PI)).round() as i32;
-            let bin_number = (remainder/num_phi_bins).floor() as i32;
+            let wrap = ((phi-remainder)/(2.0*std::f64::consts::PI)).round() as usize;
+            let bin_number = (remainder/num_phi_bins as f64).floor() as usize;
             wrapped_data[bin_number].push(WrappedDataPoint{
                 index,
                 wrap,
                 phi,
-                r:self.radial_graph(index),
-                theta:self.theta_graph(index),
-                h:self.stream_height(index)})
+                r:self.radial_graph[index],
+                theta:self.theta_graph[index],
+                h:self.stream_height[index]})
         }
         wrapped_data
     }
 
-    fn find_intersections(mut self,num_phi_bins:usize) -> Vec<((usize,usize), bool, f64,f64,bool)> {
-        let wrapped_data = self.wrap_data(num_phi_bins);
+    pub(crate) fn find_intersections(mut self) -> Vec<(bool, bool, (usize, usize))> {
+        let mut wrapped_data = self.wrap_data();
         let mut intersections = Vec::new();
-        for phi_bin in wrapped_data{
-            if wrapped_data[phi_bin].len() < 2{continue} //check that there are at least 2 points at this phi value
-            else{
-                let sorted_by_wrap = wrapped_data[phi_bin].sort_by(|x| x.wrap.abs());
-                if sorted_by_wrap.popfront().wrap == sorted_by_wrap.pop().wrap{continue} //check that there are points from at least two different wraps
+        for phi_bin in 0..wrapped_data.len(){
+         //   println!("{:?}",wrapped_data[phi_bin]);
 
-                //find the smallest sigma and largest delta
-                let sigma_min = wrapped_data[phi_bin].into_iter().map(|point| sigma(point.r,point.theta)).sort().popfont();
-                let delta_max = wrapped_data[phi_bin].into_iter().map(|point| delta(point.r)).sort().pop();
+            if wrapped_data[phi_bin].len() < 2 { continue
+            } //check that there are at least 2 points at this phi value
+            else {
+                wrapped_data[phi_bin].sort_by_key(|x| x.wrap);
+                if wrapped_data[phi_bin][wrapped_data.len()-1].wrap == wrapped_data[phi_bin][0].wrap { continue }else { //check that there are points from at least two different wraps
 
+                    //find the smallest sigma and largest delta
+                    let mut sigmas = wrapped_data[phi_bin].clone().into_iter().map(|point| sigma(point.r, point.theta)).collect::<Vec<f64>>();
+                    sigmas.sort_by(|a,b|a.partial_cmp(b).unwrap());
+                    let sigma_min = sigmas[0];
 
-                //now we want to find the maximum distance delta r and delta theta between these points
-                let min_r_distances_and_corresponding_h_ave =  wrapped_data[phi_bin].into_iter().map(|point|
-                                 wrapped_data[phi_bin]
-                                     .into_iter()
-                                     .map(|second_point|
-                                     if second_point.wrap == point.wrap{}
-                                     else{
-                                         ((point.r-second_point.r).abs(),(point.h+second_point.h)/2.0,(point.index,second_point.index))
-                                     }
-                                     ).sort_by(|(r_distance,h,indices)| r_distance).pop()
-                    );
+                    let mut deltas = wrapped_data[phi_bin].clone().into_iter().map(|point| delta(point.r)).collect::<Vec<f64>>();
+                    deltas.sort_by(|a,b|a.partial_cmp(b).unwrap());
+                    let delta_max = deltas[deltas.len()-1];
 
-                let min_theta_distances_and_corresponding_h_ave =  wrapped_data[phi_bin].into_iter().map(|point|
-                                wrapped_data[phi_bin]
-                                    .into_iter()
-                                    .map(|second_point|
-                                    if second_point.wrap == point.wrap{}
-                                    else{
-                                        ((point.theta-second_point.theta).abs(),(point.h+second_point.h)/2.0,(point.index,second_point.index))
+                    //now we want to find the maximum distance delta r and delta theta between these points
+                    for point in wrapped_data[phi_bin].clone().into_iter() {
+                        for second_point in wrapped_data[phi_bin].clone().into_iter() {
+                            if second_point.wrap == point.wrap {
+                                continue
+                            } else {
+                                let delta_r = (point.r - second_point.r).abs();
+                                let delta_theta = (point.theta - second_point.theta).abs();
+                                let lower_distance_bound = lower_distance_bound(delta_max, sigma_min, delta_r, delta_theta);
+                                let h_ave = (point.h + second_point.h) / 2.0;
+                                if lower_distance_bound > h_ave {
+                                    intersections.push((false, false, (point.index, second_point.index)));
+                                } else {
+                                    let first_coords = (point.r, point.theta);
+                                    let second_coords = (second_point.r, second_point.theta);
+                                    let distance = distance(first_coords, second_coords, 50);
+                                    if distance > h_ave {
+                                        intersections.push((false, true, (point.index, second_point.index)));
+                                    } else {
+                                        intersections.push((true, true, (point.index, second_point.index)));
                                     }
-                                    ).sort_by(|(theta_distance,h,indices)| theta_distance).pop()
-                                );
-
-                for (index, (smallest_r_distance,h_r,indices)) in min_r_distances_and_corresponding_h_ave.enumerate() {
-                    let (smallest_theta_distance,h_theta,indices) = min_theta_distances_and_corresponding_h_ave[index];
-
-                    let h_max = f64::max(h_r,h_theta);
-                    let lower_distance_bound = lower_distance_bound(delta_max,sigma_min,smallest_r_distance,smallest_theta_distance);
-
-                    if h_max>lower_distance_bound{ //if the stream width is wider than this rough lower bound on the distance, there is a chance of collision
-
+                                }
+                            }
+                        }
                     }
-
-
-                    let distance = distance(coords_bin[point],coords_bin[second_point],50);
-
-
-                }
-
-
-
-
-
-
-            }
-
-
-
                 }
             }
         }
+       // println!("{:?}",intersections);
         intersections
-
     }
-
-
 }
 
 

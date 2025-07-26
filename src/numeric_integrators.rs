@@ -12,13 +12,27 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
     let mut phi_graph= Vec::with_capacity(num_steps);
     let mut steps_since_flip = 0;
     let mut flipped = false;
-    for step in 0..15{
-        println!("{:?}",trajectory_graph.radial_graph[step]);
+
+    let mut reached_mid_point = false;
+    let mut step = 0;
+
+    while reached_mid_point == false{
+        let r = trajectory_graph.radial_graph[step];
+
+
+        if  (r-5000.0).abs()<2000.0{      //////TODOOOOO
+            println!("at   {:?}", r);
+            reached_mid_point = true;
+        }
+
+        println!("{:?}",r);
         phi_graph.push(h);
+        step = step+1;
 
     }
+    println!("exited hold at time {step} at value {:?}",trajectory_graph.radial_graph[step]);
 
-    for step in 15..num_steps{
+    for step in step..num_steps{
         steps_since_flip = steps_since_flip + 1;
         let d_tau = step_size*(trajectory_graph.radial_graph[step].powi(2)+A*A*trajectory_graph.theta_graph[step].cos().powi(2));
         let velocity_increment = H_acceleration(trajectory_graph.radial_graph[step],
@@ -58,7 +72,6 @@ pub fn integrate_t(radial_graph: Vec<f64>, theta_graph:Vec<f64>, stellar_params:
     }
     t_graph
 } //con
-
 pub(crate) fn integrate_r(r_initial:f64, stellar_params: StellarParams, num_steps:usize,step_size:f64) -> (Vec<f64>, f64, usize){
     let params = find_radial_parameters(stellar_params);
     let mut psi = r_to_psi(r_initial,params.e, params.p);
