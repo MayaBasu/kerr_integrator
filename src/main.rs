@@ -47,7 +47,7 @@ fn main() {
 
 
 
-    let star = Star::new(stellar_params, tidal_radius, 1.5235996057125137,stellar_radius,NUM_STEPS,STEP_SIZE,1);
+    let star = Star::new(stellar_params, tidal_radius, 800.0,stellar_radius,NUM_STEPS,STEP_SIZE,1);
 
     star.serialize("star.json").unwrap()
 

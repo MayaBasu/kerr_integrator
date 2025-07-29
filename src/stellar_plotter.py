@@ -1,3 +1,5 @@
+import math
+
 import kerrgeopy as kg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +20,7 @@ def stream_evolution():
         stream_axis.plot(radial_graph,stream_data)
 
 
-def compare_components(a):
+def compare_components(a,start_search_divisions):
     fig, axs = plt.subplots(3, 4)
     for star_chunk in star_chunks:
         ballistic_data = star_chunk["geodesic_graph"]
@@ -29,10 +31,17 @@ def compare_components(a):
         LZ = stellar_params["lz"]
         C = stellar_params["c"]
 
+
         phi_graph = np.array(ballistic_data["phi_graph"])
         theta_graph = np.array(ballistic_data["theta_graph"])
         radial_graph = np.array(ballistic_data["radial_graph"])
         t_graph = np.array(ballistic_data["t_graph"])
+        print(theta_graph)
+        r_phase,theta_phase = find_initial_phases(a,E,LZ,C,radial_graph[0],theta_graph[0],start_search_divisions)
+        orbit = kg.StableOrbit.from_constants(a, E, LZ, C,initial_phases=(0,r_phase,theta_phase,0))
+        t_kg, r_kg, theta_kg, phi_kg = orbit.trajectory()
+
+
 
         x_axis = np.linspace(0, num_steps*step_size, num_steps)
 
@@ -53,34 +62,20 @@ def compare_components(a):
         plt.xlabel("$\lambda$")
         plt.ylabel(r"$t(\lambda)$")
 
-        orbit = kg.StableOrbit.from_constants(a, E, LZ, C)
-        t_kg, r_kg, theta_kg, phi_kg = orbit.trajectory()
 
-
-        index_finder = np.linspace(0,num_steps*step_size,num_steps*10000)
-
-        initial_index = np.argmin(np.absolute(np.array(r_kg(index_finder))-radial_graph[0]))
-        delay_time = initial_index*step_size/10000
-
-
-        print(delay_time)
-        print(r_kg(delay_time))
-        print(radial_graph[0])
-        shifted_x_axis = np.linspace(delay_time,num_steps*step_size+delay_time,num_steps)
-
-        axs[1,0].plot(shifted_x_axis, r_kg(shifted_x_axis))
+        axs[1,0].plot(x_axis, r_kg(x_axis))
         plt.xlabel("$\lambda$")
         plt.ylabel("$r(\lambda)$")
 
-        axs[1,1].plot(shifted_x_axis, theta_kg(shifted_x_axis))
+        axs[1,1].plot(x_axis, theta_kg(x_axis))
         plt.xlabel("$\lambda$")
         plt.ylabel(r"$\theta(\lambda)$")
 
-        axs[1,2].plot(shifted_x_axis, phi_kg(shifted_x_axis))
+        axs[1,2].plot(x_axis, phi_kg(x_axis))
         plt.xlabel("$\lambda$")
         plt.ylabel(r"$\phi(\lambda)$")
 
-        axs[1,3].plot(shifted_x_axis, t_kg(shifted_x_axis))
+        axs[1,3].plot(x_axis, t_kg(x_axis))
         plt.xlabel("$\lambda$")
         plt.ylabel(r"$t(\lambda)$")
 
@@ -106,18 +101,18 @@ def plot_3d():
 
 def plot_stellar_profile():
     fraction_masses = []
-    binding_energys = []
+    binding_energies = []
 
     for star_chunk in star_chunks:
         fraction_of_star = star_chunk["fraction_of_star"]
         binding_energy = star_chunk["binding_energy"]
         fraction_masses.append(fraction_of_star * len(star_chunks))
-        binding_energys.append(float(binding_energy))
+        binding_energies.append(float(binding_energy))
 
     stellar_profile, (stellar_profile_axis) = plt.subplots(1, 1, figsize=(6.4, 4), layout="constrained")
     stellar_profile_axis.xaxis.set_inverted(True)
     stellar_profile.suptitle('Fraction of Star with each Binding Energy')
-    stellar_profile_axis.plot(binding_energys, fraction_masses)
+    stellar_profile_axis.plot(binding_energies, fraction_masses)
     stellar_profile.suptitle("Fraction of Stellar Mass at Each Binding Energy")
     stellar_profile_axis.set_xlabel('Binding Energy of Slices')
     stellar_profile_axis.set_ylabel('Fraction of Stellar Mass')
@@ -126,7 +121,37 @@ def plot_stellar_profile():
     stellar_profile.tight_layout()
     plt.savefig("graphs/fraction_with_binding_energy.png")
 
-compare_components(0.9)
+
+
+def find_initial_phases(a,E,LZ,C,r0,theta0,start_search_divisions):
+
+    orbit = kg.StableOrbit.from_constants(a, E, LZ, C)
+    a,p,e,x = kg.apex_from_constants(a,E,LZ,C)
+    t_kg, r_kg, theta_kg, phi_kg = orbit.trajectory()
+
+    half_r_period = math.pi/kg.r_frequency(a,p,e,x)
+    half_theta_period = math.pi/kg.theta_frequency(a,p,e,x)
+    print(theta0)
+
+    initial_r_index = np.argmin(np.absolute(np.array(r_kg(np.linspace(0,half_r_period,start_search_divisions)))-r0))
+    initial_theta_index = np.argmin(np.absolute(np.array(theta_kg(np.linspace(0,half_theta_period,start_search_divisions)))-theta0))
+
+    r_delay_time = initial_r_index*(half_r_period/start_search_divisions)
+    theta_delay_time = initial_theta_index*(half_theta_period/start_search_divisions)
+
+    print("r: Matching the initial condition of {} by taking {} at a delay_time of {}, index is {}".format(r0,r_kg(r_delay_time), r_delay_time,initial_r_index))
+    print("theta: Matching the initial condition of {} by taking {} at a delay_time of {}, index is {}".format(theta0,theta_kg(theta_delay_time), theta_delay_time,initial_theta_index))
+
+    r_phase = (r_delay_time/half_r_period)*math.pi
+    theta_phase = (theta_delay_time/half_theta_period)*math.pi
+
+    return r_phase,theta_phase
+
+
+
+
+
+compare_components(0.9,100000)
 
 
 plt.show()
