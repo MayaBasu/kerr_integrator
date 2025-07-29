@@ -11,6 +11,7 @@ pub fn initialize_star_chunks(stellar_params: StellarParams, r_cm:f64, r_stellar
     for i in 0..num_slices {
         let r_out = i as f64 * delta_r;
         let delta_binding_energy= r_out / (r_cm.powi(2));
+        println!("{:?} The delta in binding energy is {:?}",(r_cm,r_out),delta_binding_energy);
         let binding_energy = stellar_params.e - delta_binding_energy;
         let fraction_of_star= fractional_stellar_slice_volume(r_out, delta_r, r_stellar);
         let chunk_stellar_parameters = StellarParams{lz:stellar_params.lz, e:binding_energy, c:stellar_params.c};
@@ -31,6 +32,11 @@ pub fn fractional_stellar_slice_volume(r_out:f64,delta_r:f64,r_star:f64) ->f64{
     let stellar_volume = (4.0/3.0)* std::f64::consts::PI *r_star.powi(3);
     let stellar_chunk_volume = std::f64::consts::PI*stellar_chunk_radius.powi(2)*delta_r;
     stellar_chunk_volume/stellar_volume
+}
+
+
+pub fn tidal_radius(stellar_radius:f64,stellar_mass:f64)->f64{
+    stellar_radius*(1.0/stellar_mass).powf(1.0/3.0)
 }
 
 

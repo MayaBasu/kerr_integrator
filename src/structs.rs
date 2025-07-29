@@ -74,7 +74,7 @@ impl GeodesicGraph {
         let theta_graph = integrate_theta(theta_initial,stellar_params,num_steps,step_size).0;
         let t_graph = integrate_t(radial_graph.clone(), theta_graph.clone(), stellar_params,num_steps,step_size);
         let phi_graph = integrate_phi(radial_graph.clone(),theta_graph.clone(), stellar_params,num_steps,step_size);
-        println!(" phi values are {:?}",phi_graph);
+      //  println!(" phi values are {:?}",phi_graph);
 
         Self {
             stellar_params,
@@ -209,32 +209,12 @@ pub struct Star {
     weighted_phi_values:Vec<((usize, [f64; 2]), f64)>
 }
 impl Star{
-    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64,num_steps:usize,step_size:f64)-> Self{
-        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, 10,theta_initial,num_steps,step_size);
+    pub fn new(stellar_params: StellarParams, r_initial: f64, theta_initial: f64,stellar_radius:f64,num_steps:usize,step_size:f64,num_slices:usize)-> Self{
+        let star_chunks = initialize_star_chunks(stellar_params,r_initial, stellar_radius, num_slices,theta_initial,num_steps,step_size);
         let weighted_phi_values = Vec::new();
         Self{star_chunks,stellar_params,r_initial,theta_initial,weighted_phi_values}
     }
-    /*
-    pub fn weighted_phi_values(&mut self, t:f64)->Vec<((usize, [f64; 2]), f64)>{
-        let mut phi_values = Vec::new();
-        for star_chunk in self.star_chunks.clone(){
-            phi_values.push((star_chunk.geodesic_graph.return_phi_at_t(t),star_chunk.fraction_of_star));
-        }
-        self.weighted_phi_values = phi_values.clone();
-        phi_values
-    }
-    pub fn total_angular_momentum(&mut self, t:f64) ->(f64,f64){
-        let phi_values = Star::weighted_phi_values(self, t);
-        let mut total_angular_momentum = (0.0,0.0);
-        for phi_value in phi_values{
-            let (angle,weight) = phi_value;
-            let angle = angle.1[1];
-            total_angular_momentum = (total_angular_momentum.0 + (angle.cos())*weight,total_angular_momentum.1 + (angle.sin())*weight)
-        }
-        total_angular_momentum
-    }
 
-     */
     pub fn serialize(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
         let graph_json = serde_json::to_string(&self)?;
         let mut file = File::create(file_path)?;

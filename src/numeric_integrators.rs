@@ -25,7 +25,7 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
             reached_mid_point = true;
         }
 
-        println!("{:?}",r);
+       // println!("{:?}",r);
         phi_graph.push(h);
         step = step+1;
 
@@ -68,7 +68,7 @@ pub fn integrate_t(radial_graph: Vec<f64>, theta_graph:Vec<f64>, stellar_params:
             radial_graph[i],
             theta_graph[i], stellar_params)*step_size;
         t = t + increment;
-        t_graph.push(radial_graph[i]);
+        t_graph.push(t);
     }
     t_graph
 } //con
