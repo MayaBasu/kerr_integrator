@@ -34,7 +34,7 @@ pub(crate) fn find_theta_parameters(stellar_params: StellarParams) ->  ThetaPara
         }
     }
     let [zminus,zplus] = quadratic_root_finder(theta_coefficients(stellar_params.clone()));
-    println!("z_minus is {zminus} and z_plus is {zplus}");
+   // println!("z_minus is {zminus} and z_plus is {zplus}");
     let beta = A*A*(1.0-stellar_params.e*stellar_params.e);
 
     ThetaParams{
@@ -75,7 +75,7 @@ fn quadratic_root_finder(coefficients:[f64;3]) -> [f64; 2] {
 
     match find_roots_quadratic(coefficients[2], coefficients[1], coefficients[0]) {
         Roots::Two(roots) =>{
-            println!("succesfully found two roots: {:?}", roots);
+            //println!("succesfully found two roots: {:?}", roots);
             roots
         }
         _ => {
@@ -89,10 +89,10 @@ pub fn radial_roots(stellar_params: StellarParams) -> [f64; 4] {
 fn quartic_root_finder(coefficients:[f64;5]) -> [f64; 4] {
     //this function takes in coefficients of a quartic and outputs a vector of roots
     //it is possible the roots overlap for a certain parameter set, but we want to panic and invesigate this case.
-    println!("THE COEFFICIENTS ARE {:?}", coefficients);
+   // println!("THE COEFFICIENTS ARE {:?}", coefficients);
     match find_roots_quartic(coefficients[4], coefficients[3], coefficients[2], coefficients[1], coefficients[0]) {
         Roots::Four(roots) =>{
-            println!("succesfully found four roots: {:?}", roots);
+           // println!("succesfully found four roots: {:?}", roots);
             roots
         }
         Roots::Three(roots) =>{

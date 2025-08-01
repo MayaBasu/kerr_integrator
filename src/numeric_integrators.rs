@@ -18,9 +18,10 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
 
     while reached_mid_point == false{
         let r = trajectory_graph.radial_graph[step];
+        let delta_r = (trajectory_graph.radial_graph[step]-trajectory_graph.radial_graph[step+1]).abs();
 
 
-        if  (r-5000.0).abs()<2000.0{      //////TODOOOOO
+        if  (r-5000.0).abs()<2.0*delta_r{      //////TODOOOOO
             println!("at   {:?}", r);
             reached_mid_point = true;
         }
