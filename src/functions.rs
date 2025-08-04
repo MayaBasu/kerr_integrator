@@ -131,12 +131,7 @@ pub fn R(theta:f64,stellar_params: StellarParams)-> f64{
 pub fn S(r:f64,stellar_params: StellarParams)-> f64{
     r.powi(2)+K(stellar_params)
 }
-pub fn P(r:f64,stellar_params: StellarParams)->f64{
-    let e = stellar_params.e;
-    let lz = stellar_params.lz;
 
-    e*(r*r+A*A)-A*lz
-}
 pub fn mino_to_bl_time(t_graph:Vec<[f64;2]>, mut other_graph: Vec<[f64;2]>)->Vec<[f64;2]>{
     //function to convert between one graph, such as phi, or r, or theta, in mino time, to a graph in boyer lindquist time
     for point in 0..other_graph.len(){
@@ -144,6 +139,8 @@ pub fn mino_to_bl_time(t_graph:Vec<[f64;2]>, mut other_graph: Vec<[f64;2]>)->Vec
     }
     other_graph
 }
+
+
 pub fn lower_distance_bound(delta_max:f64,sigma_min:f64,delta_r:f64,delta_theta:f64)->f64{
     ((sigma_min/delta_max)*delta_r.powi(2)+ sigma_min*delta_theta.powi(2)).sqrt()
 }

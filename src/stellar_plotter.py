@@ -11,7 +11,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 colors = {"orange":'#D1603D',"blue":(0.44,0.44,1),"green":"#386150","brown":"#544343"}
 
-with open('stars/star_0.5_6.5_6.txt', 'r') as file:
+with open('../star.json', 'r') as file:
 
     star = json.load(file)
     star_chunks = star["star_chunks"]
@@ -35,22 +35,26 @@ def geodesic_stream_evolution():
     radial_graph = np.array(ballistic_data["radial_graph"])
     stream_data = np.array(ballistic_data["stream_height"])
     stream_axis.plot(radial_graph, stream_data,color="orange",label="Debris Stream Width")
-    stream_axis.set_xlabel("radial coordinate")
-    stream_axis.set_ylabel("stream width")
+    stream_axis.set_xlabel("r",size="x-large")
+    stream_axis.set_ylabel("Stream Width",size="x-large")
+    stream_axis.set_ylim([0,11.5])
+    stream_axis.set_xlim([0,10000])
+    stream_axis.grid(axis='both')
 
 
     close.plot(radial_graph, stream_data,color="orange",label="Debris Stream Width")
-    close.set_xlabel("radial coordinate")
-    close.set_ylabel("stream width")
+    close.set_xlabel("r",size="x-large")
+    close.set_ylabel("Stream Width",size="x-large")
     close.set_title("Close up view")
-    close.set_xlim([15,25])
+    close.set_xlim([18,25])
     close.set_ylim([0,0.14])
+    plt.grid(axis='both')
 
 
 
-    fig.suptitle("Debris Stream Width Evolution")
+    fig.suptitle("Debris Stream Width Evolution as a Function of Radial Distance from the SMBH")
     plt.tight_layout()
-    plt.legend()
+   # plt.legend()
     plt.savefig("graphs/stream_height")
 
 def compare_components(a, start_search_divisions):
@@ -295,9 +299,6 @@ def plot_3d_star_chunks():
     three_d_fig = plt.figure(figsize=(6, 6))
     ax = plt.axes(projection='3d')
 
-
-
-
     x_ends = []
     y_ends = []
     z_ends = []
@@ -323,6 +324,7 @@ def plot_3d_star_chunks():
             x_ends.append(x[-1])
             y_ends.append(y[-1])
             z_ends.append(z[-1])
+            #colors.append((index/len(star_chunks),0,1))
             colors.append((index/len(star_chunks),0,1))
             color_list.append(star_chunk["binding_energy"])
  # Red, Green, Blue
@@ -331,11 +333,13 @@ def plot_3d_star_chunks():
     scatter = ax.scatter(x_ends,y_ends,z_ends,c=color_list,cmap=custom_cmap)
     cbar = plt.colorbar(scatter,fraction=0.026, pad=0.08)
 
-    cbar.set_label("Specific Binding Energy")
+    cbar.set_label("Specific Binding Energy",size="x-large")
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+   # ax.set_xlabel("x",size="xx-large")
+    ax.set_ylabel("y",size="xx-large")
+    ax.set_zlabel("z",size="xx-large")
+    plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
+    plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
     ax.set_title("Angular Debris Spread due to Varying Binding Energies")
 
     plt.tight_layout()
@@ -365,11 +369,11 @@ def plot_3d_geodesic():
     ax.set_ylabel("y",size="xx-large")
     ax.set_zlabel("z",size="xx-large")
 
-    ax.plot(x,y,z,color=colors["blue"],label="Center-of-mass geodesic")
+    ax.plot(x,y,z,color=colors["orange"],label="Center-of-mass geodesic")
     ax.set_title("Elucidated 3-dimensional Orbital Trajectory",size="large")
     plt.setp(ax.get_xticklabels(), rotation=30, horizontalalignment='right')
 
-    #plt.legend(loc="upper right")
+    plt.legend(loc="upper right")
 
 
 
@@ -378,7 +382,7 @@ def plot_3d_geodesic():
     fig, ax2 = plt.subplots(1, 1, figsize=(3, 3))
 
 
-    ax2.plot(y,z,color=colors["blue"],label="Projected center-of-mass geodesic")
+    ax2.plot(y,z,color=colors["orange"],label="Projected center-of-mass geodesic")
     ax2.scatter(0,0,color="black",label="SMBH location")
 
     ax2.set_xlim([-0.2,0.2])
@@ -406,8 +410,9 @@ def plot_stellar_profile():
     stellar_profile, (stellar_profile_axis) = plt.subplots(1, 1, figsize=(6.4, 4), layout="constrained")
     stellar_profile_axis.xaxis.set_inverted(True)
     stellar_profile_axis.plot(binding_energies, fraction_masses)
-    stellar_profile.suptitle("Fraction of Stellar Mass at Each Binding Energy")
-    stellar_profile_axis.set_xlabel('Binding Energy of Slices')
+    stellar_profile.suptitle("Normalized Fraction of Stellar Mass at Each Binding Energy")
+    stellar_profile_axis.set_xlim([0.9999,0.9996894])
+    stellar_profile_axis.set_xlabel('Specific Binding Energy of Slices')
     plt.xticks(np.linspace(binding_energies[0],binding_energies[-1],5))
     stellar_profile_axis.set_ylabel('Fraction of Stellar Mass')
     stellar_profile_axis.grid(True)
@@ -469,18 +474,18 @@ def plot_angular_momentum_over_time():
 
 
     axs[0].plot(times,zcomps,color=colors["blue"],label="z-component of total angular momentum")
-    axs[0].set_xlabel("time")
-    axs[0].set_ylabel("Specific Angular Momentum")
+    axs[0].set_xlabel("Time",size="xx-large")
+    axs[0].set_ylabel("Specific Angular Momentum",size="x-large")
     axs[0].plot(times,xycomps,color=colors["green"], label="xy-component of total angular momentum")
-    axs[1].plot(times,angles,color=colors["orange"],label="Cosine of approximate total debris inclination")
-    axs[1].set_xlabel("time")
-    axs[1].set_ylabel("$L_z/L$")
+    axs[1].plot(times[0],angles[0],color=colors["orange"],label="Cosine of approximate total debris inclination")
+    axs[1].set_xlabel("Time",size="xx-large")
+    axs[1].set_ylabel("$L_z/L$",size="xx-large")
 
-    fig.legend(loc="right")
-    fig.suptitle("Time Evolution of Total Angular Momentum before Initial Self Intersection")
+    fig.legend()
+    fig.suptitle("Time Evolution of Total Angular Momentum before Initial Self Intersection",size="x-large")
     plt.tight_layout()
 
-plot_3d_geodesic()
+plot_3d_star_chunks()
 
 
 plt.show()

@@ -83,5 +83,5 @@ pub fn H_acceleration(r:f64,theta:f64, H:f64,stellar_params: StellarParams)->f64
                     (K(stellar_params)*sigma.powi(2)))
     )
 
-} // ?
+} // con
 

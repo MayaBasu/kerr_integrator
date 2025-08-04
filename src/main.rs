@@ -21,8 +21,8 @@ pub const NUM_PHI_BINS:usize =  1000;
 
 fn main() {
 
-    let step_size =  0.0001;
-    let num_steps = 80000;
+    let step_size =  0.00001;
+    let num_steps = 800000;
     let num_slices = 100;
 
     let cos_inclination = 0.5;
@@ -40,9 +40,10 @@ fn main() {
     //check that the star is disrupted within it's orbit
 
     //calculate_total_angular_momentum(periapsis,apoapsis,stellar_params,num_steps,step_size,tidal_radius,stellar_radius,num_slices)
-    let mut graph = GeodesicGraph::new(stellar_params, 9000.0, 1.5, num_steps, step_size);
-    graph.calculate_stream_width(0.7,0.0);
-    graph.serialize("src/maingraph.txt").unwrap()
+    let mut star = Star::new_trimmed(stellar_params, 47.0, 1.5, stellar_radius,  num_steps, step_size, 100,5000000.0);
+
+
+    star.serialize("star.json").unwrap()
 }
 
 
