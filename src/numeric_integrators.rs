@@ -16,14 +16,21 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
     let mut reached_mid_point = false;
     let mut step = 0;
 
+
+
+
+
+
+
     while reached_mid_point == false{
         let r = trajectory_graph.radial_graph[step];
         let delta_r = (trajectory_graph.radial_graph[step]-trajectory_graph.radial_graph[step+1]).abs();
 
 
         if  (r-5000.0).abs()<2.0*delta_r{      //////TODOOOOO
-            println!("at   {:?}", r);
+            println!("at   {:?}, the time is {:?}", r, trajectory_graph.t_graph[step]);
             reached_mid_point = true;
+
         }
 
        // println!("{:?}",r);
@@ -31,7 +38,11 @@ pub fn integrate_H(trajectory_graph:&GeodesicGraph, h_der_initial:f64, h_initial
         step = step+1;
 
     }
-    println!("exited hold at time {step} at value {:?}",trajectory_graph.radial_graph[step]);
+
+
+
+
+    println!("exited hold at step {step} at value {:?}",trajectory_graph.radial_graph[step]);
 
     for step in step..num_steps{
         steps_since_flip = steps_since_flip + 1;
@@ -131,3 +142,8 @@ fn theta_to_chi(theta:f64, zminus:f64) -> f64{
     (theta.cos()/(zminus).sqrt()).acos()
 } //con
 
+pub fn find_bl_H(trajectory_graph:&GeodesicGraph){
+    assert!(trajectory_graph.stream_height.len()>0);
+
+
+}

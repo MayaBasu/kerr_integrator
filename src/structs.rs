@@ -3,8 +3,8 @@ use serde::{Serialize};
 use std::fs::File;
 use std::io::Write;
 use std::error::Error;
-
-use crate::functions::{delta, distance, lower_distance_bound,  sigma};
+use std::f32::consts::PI;
+use crate::functions::{delta, distance, lower_distance_bound, sigma};
 use crate::NUM_PHI_BINS;
 use crate::numeric_integrators::{integrate_H, integrate_phi, integrate_r, integrate_t, integrate_theta};
 use crate::star_initialization::initialize_star_chunks;
@@ -167,7 +167,7 @@ impl GeodesicGraph {
 
 
 
-    pub fn wrap_data(self)->[Vec<WrappedDataPoint>; NUM_PHI_BINS]{
+    pub fn wrap_data(&mut self)->[Vec<WrappedDataPoint>; NUM_PHI_BINS]{
         let mut wrapped_data =  [(); NUM_PHI_BINS].map(|_| Vec::new());
         let bin_size = (2.0*std::f64::consts::PI)/NUM_PHI_BINS as f64;
         let mut last_bin = 0;
@@ -175,7 +175,7 @@ impl GeodesicGraph {
             let remainder = phi % (2.0*std::f64::consts::PI);
             let wrap = ((phi-remainder)/(2.0*std::f64::consts::PI)).round() as usize;
             let bin_number = (remainder/ bin_size ).floor() as usize;
-            if ((bin_number as f64 -last_bin as f64)%NUM_PHI_BINS as f64).abs()>1.0 && (last_bin !=NUM_PHI_BINS-1){
+            if ((bin_number as f64 -last_bin as f64)).abs()>1.0 && (last_bin !=NUM_PHI_BINS-1){
                 println!("Skipped a bin!!!, before was {}, now is {}",last_bin,bin_number)
             }
             last_bin = bin_number;
@@ -188,11 +188,12 @@ impl GeodesicGraph {
                 theta:self.theta_graph[index],
                 h:self.stream_height[index]})
         }
+        self.wrapped_data = wrapped_data.to_vec();
 
         wrapped_data
     }
 
-    pub(crate) fn find_intersections(mut self) -> Vec<(usize,usize)> {
+    pub(crate) fn find_earliest_intersection(&mut self) -> Vec<(usize, usize)> {
         let mut lowest_upper_index = self.num_steps;
         let mut wrapped_data = self.wrap_data();
         let mut intersections = Vec::new();
@@ -215,9 +216,19 @@ impl GeodesicGraph {
                     sigmas.sort_by(|a,b|a.partial_cmp(b).unwrap());
                     let sigma_min = sigmas[0];
 
+
                     let mut deltas = wrapped_data[phi_bin].clone().into_iter().map(|point| delta(point.r)).collect::<Vec<f64>>();
                     deltas.sort_by(|a,b|a.partial_cmp(b).unwrap());
                     let delta_max = deltas[deltas.len()-1];
+                    if phi_bin ==40{
+                       // println!("sigmas are {:?} and sigma min is {sigma_min}",sigmas);
+                       // println!("deltas are {:?} and delta max is {delta_max}",deltas);
+                        //println!("the wrapped data is {:?}",wrapped_data[phi_bin]);
+                        for wrapped_data_point in &wrapped_data[phi_bin]{
+                            //println!("The phi value is at {:?}",wrapped_data_point.phi % (2.0*std::f64::consts::PI))
+                        }
+
+                    }
 
                     //now we want to find the minimum distance delta r and delta theta between these points
                     for point in wrapped_data[phi_bin].clone().into_iter() {
@@ -261,18 +272,26 @@ impl GeodesicGraph {
 
         for intersection in intersections{
             if intersection.0 == true{
-                positive_intersections.push(intersection.2)
+
+                positive_intersections.push(intersection.2);
+
             }
         }
         positive_intersections
     }
 
     pub fn find_stop_time(&mut self)-> f64{
-        let intersections = self.clone().find_intersections();
+        let intersections = self.clone().find_earliest_intersection();
         let mut times = Vec::new();
 
         for intersection in intersections{
             let time = self.t_graph[intersection.0].max(self.t_graph[intersection.1]);
+            //println!("The phi value is at {:?} and {:?}",self.phi_graph[intersection.0],self.phi_graph[intersection.1]);
+            let phi = self.phi_graph[intersection.0];
+            let remainder = phi % (2.0*std::f64::consts::PI);
+            let bin_size = 2.0*std::f64::consts::PI/NUM_PHI_BINS as f64;
+            let bin_number = (remainder/ bin_size ).floor() as usize;
+            //println!("The bin is {:?} at time {:?}",bin_number,time);
             times.push(time)
         }
 
@@ -281,7 +300,9 @@ impl GeodesicGraph {
             return 0.0
         }
         times.sort_by(|a,b|a.partial_cmp(b).unwrap());
+
         let time_min = times[0];
+
        // println!("The times of intersection are {:?} and I am taking {:?}",times,time_min);
         time_min
 
